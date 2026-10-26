@@ -84,7 +84,9 @@ Regra: a lógica de negócio fica em `radar/`. As páginas em `app/` só chamam 
 
 ## Modelo de dados
 
-Tabelas: `fornecedor`, `interacao`, `sku_fornecedor`, `produto`, `anuncio`, `preco_observado`, `kit`, `kit_item`, `cenario_margem`, `usuario`.
+Tabelas: `fornecedor`, `interacao`, `sku_fornecedor`, `produto`, `anuncio`, `preco_observado`, `kit`, `kit_item`, `cenario_margem`, `usuario`, `tarefa`.
+
+`tarefa` guarda as tarefas do plano de 30 dias para o Painel (aprovada pelo Legacia em 26/10/2026).
 
 `usuario` guarda nome, e-mail (único) e `senha_hash`. Nada além disso.
 
@@ -194,6 +196,7 @@ Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Lega
   - Contas são criadas pelo Legacia, por um comando de linha no servidor (por exemplo `python -m radar.usuarios criar`). Não existe tela de cadastro aberto.
   - A senha é guardada **somente como hash** (bcrypt ou argon2), na tabela `usuario`. Nunca em texto, nunca no código, nunca no Git.
   - Senha esquecida: o Legacia redefine pelo mesmo comando no servidor. Sem recuperação por e-mail.
+  - A sessão dura no máximo **8 horas** desde a entrada, sem prorrogação por atividade (aprovado pelo Legacia em 26/10/2026). O valor fica em `radar/sessoes.py`.
   - "Simples" significa sem perfis e sem permissões diferentes: quem tem conta vê tudo. Mas o login é de verdade: sessão por usuário (`st.session_state`) e todas as páginas verificam se há sessão ativa antes de mostrar qualquer dado.
   - Limite conhecido: na rede local a conexão é HTTP, sem criptografia. Aceitável em rede doméstica protegida; reavaliar se a rede deixar de ser só de vocês.
   - Nenhum agente de IA cria contas reais nem escolhe senhas. Para testes, usar contas fictícias criadas só no banco de teste.
@@ -223,14 +226,14 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 
 ## Pontos em aberto
 
-- Login: quantas contas existirão no início (previsto: Legacia e Anna, cada um com o próprio e-mail e a própria senha) e por quanto tempo a sessão fica aberta antes de pedir a senha de novo.
+- Login: quantas contas existirão no início (previsto: Legacia e Anna, cada um com o próprio e-mail e a própria senha).
 - Lista dos 20 produtos candidatos e dos links de anúncios
 - Resposta dos fornecedores. Os cinco listados no planejamento (Brasil Esotérico Atacado, Baú da Bruxa, Mandala Esotérica Atacado, Encantos do Mundo, Flute Incensos) são pontos de partida para cotação, **não** parceiros aprovados, e os dados deles não foram verificados.
 
 ## Estrutura e esquema implementados no Bloco 1
 
 - `radar/banco/esquema.py` contém as migrações; `PRAGMA user_version` controla a versão (inicial: 1). Dinheiro usa colunas `*_centavos` inteiras; percentuais usam texto decimal para futura leitura por `Decimal`.
-- Além das dez tabelas acima, `tarefa` guarda `id`, `titulo`, `semana` (1 a 4), `responsavel` e `concluida` (0 ou 1), para o painel do Bloco 3.
+- `tarefa` guarda `id`, `titulo`, `semana` (1 a 4), `responsavel` e `concluida` (0 ou 1), para o painel do Bloco 3.
 - `fornecedor` inclui os campos de verificação `cnpj_verificado`, `condicoes_verificadas`, `emite_nota`, `amostra_avaliada` e `reposicao_confirmada`; `produto` inclui `especificacoes_conferidas`, `procedencia_conferida` e `qualidade_conferida`. São registros para as regras dos próximos blocos, ainda sem promoção ou decisão de compra.
 - `radar/usuarios.py` gerencia contas e autenticação; `radar/sessoes.py` controla a duração da sessão. `app/acesso.py` concentra a barreira de login; `app/painel.py` a aplica também diretamente na página.
 - `radar/conectores/base.py` define somente o contrato opcional de marketplace; não há implementação de coleta.
