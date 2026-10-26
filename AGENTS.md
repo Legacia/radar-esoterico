@@ -226,3 +226,11 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 - Login: quantas contas existirão no início (previsto: Legacia e Anna, cada um com o próprio e-mail e a própria senha) e por quanto tempo a sessão fica aberta antes de pedir a senha de novo.
 - Lista dos 20 produtos candidatos e dos links de anúncios
 - Resposta dos fornecedores. Os cinco listados no planejamento (Brasil Esotérico Atacado, Baú da Bruxa, Mandala Esotérica Atacado, Encantos do Mundo, Flute Incensos) são pontos de partida para cotação, **não** parceiros aprovados, e os dados deles não foram verificados.
+
+## Estrutura e esquema implementados no Bloco 1
+
+- `radar/banco/esquema.py` contém as migrações; `PRAGMA user_version` controla a versão (inicial: 1). Dinheiro usa colunas `*_centavos` inteiras; percentuais usam texto decimal para futura leitura por `Decimal`.
+- Além das dez tabelas acima, `tarefa` guarda `id`, `titulo`, `semana` (1 a 4), `responsavel` e `concluida` (0 ou 1), para o painel do Bloco 3.
+- `fornecedor` inclui os campos de verificação `cnpj_verificado`, `condicoes_verificadas`, `emite_nota`, `amostra_avaliada` e `reposicao_confirmada`; `produto` inclui `especificacoes_conferidas`, `procedencia_conferida` e `qualidade_conferida`. São registros para as regras dos próximos blocos, ainda sem promoção ou decisão de compra.
+- `radar/usuarios.py` gerencia contas e autenticação; `radar/sessoes.py` controla a duração da sessão. `app/acesso.py` concentra a barreira de login; `app/painel.py` a aplica também diretamente na página.
+- `radar/conectores/base.py` define somente o contrato opcional de marketplace; não há implementação de coleta.
