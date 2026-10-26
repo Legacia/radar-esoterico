@@ -31,12 +31,14 @@ Dentro:
 - **Calculadora de margem**
 - **Decisão de compra** (checklist de critérios)
 - **Painel** inicial
+- **Acesso pela rede local** (configuração do Streamlit para aceitar outros computadores, SQLite em modo WAL, instruções de uso)
+- **Login simples** com e-mail e senha, obrigatório antes de abrir qualquer tela (ver "Acesso pela rede")
 - Testes automatizados
 
 Fora (não implementar sem pedido explícito):
 
 - Nuvem, aplicativo mobile, múltiplos usuários com perfis, integração com IA em tempo real
-- Login. Se o acesso pela rede interna for ativado e houver risco, uma senha simples pode ser discutida depois.
+- Perfis e permissões diferentes por usuário, cadastro aberto de novos usuários, recuperação de senha por e-mail e login social (Google etc.). O login simples com e-mail e senha está **dentro** do escopo.
 - Coleta automática agressiva de marketplaces
 
 ## Stack
@@ -46,12 +48,15 @@ Fora (não implementar sem pedido explícito):
 - Coleta e tratamento: `requests` + `pandas`
 - Banco: SQLite (arquivo único em `data/`, com modo WAL ligado)
 - Gráficos: Plotly
-- Execução: local, pelo navegador. Acesso por outros computadores da mesma rede é desejado, mas fica para depois da primeira versão.
+- Execução: local, pelo navegador. **O acesso por outros computadores da mesma rede entra na primeira versão** (decisão do Legacia): o Radar roda num computador "servidor" e os outros abrem o endereço dele no navegador (algo como `http://192.168.0.10:8501`). Continua sem nuvem. Detalhes na seção "Acesso pela rede".
 - Agendamento: agendador do sistema operacional, só depois
 
-## Estrutura de pastas (proposta)
+## Estrutura de pastas
+
+A pasta raiz do projeto, no computador do Legacia, é `E:\Projetos\RadarEsoterico` (repositório `radar-esoterico` no GitHub). A divisão interna abaixo é a proposta vigente; o arquivo principal da interface é `app/main.py`. Mudanças na estrutura devem ser registradas aqui.
 
 ```
+.streamlit/     config.toml (configuração do servidor, vai para o Git); secrets.toml fica fora
 app/            interface Streamlit (uma página por tela)
 radar/          regras de negócio, sem código de interface
   banco/        conexão, criação de tabelas, consultas
@@ -79,7 +84,9 @@ Regra: a lógica de negócio fica em `radar/`. As páginas em `app/` só chamam 
 
 ## Modelo de dados
 
-Tabelas: `fornecedor`, `interacao`, `sku_fornecedor`, `produto`, `anuncio`, `preco_observado`, `kit`, `kit_item`, `cenario_margem`.
+Tabelas: `fornecedor`, `interacao`, `sku_fornecedor`, `produto`, `anuncio`, `preco_observado`, `kit`, `kit_item`, `cenario_margem`, `usuario`.
+
+`usuario` guarda nome, e-mail (único) e `senha_hash`. Nada além disso.
 
 Pontos que importam:
 
@@ -174,6 +181,25 @@ Não comprar só porque o fornecedor oferece desconto: antes, descobrir se o pre
 - Nunca colocar senha, chave de API ou token no código. Usar arquivo `.env` (fora do Git); só o `.env.example`, em branco, sobe.
 - Backup do banco é feito fora do Git.
 
+## Acesso pela rede
+
+Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Legacia e Anna), em casa, na mesma rede.
+
+- Um computador é o **servidor**: roda o Radar e guarda o arquivo do banco. Os outros só abrem o endereço no navegador. O servidor precisa estar ligado, com o Radar aberto.
+- Configuração do Streamlit em `.streamlit/config.toml` (versionado, sem segredos): aceitar conexões da rede (`server.address = "0.0.0.0"`) e porta fixa (padrão 8501). Documentar no README como descobrir o endereço do servidor.
+- O Windows pede liberação no firewall na primeira execução. Liberar **somente para rede privada**, nunca para rede pública.
+- SQLite com modo **WAL** ligado e `busy_timeout` configurado, para duas pessoas usarem ao mesmo tempo sem erro de "banco travado". Gravações devem ser curtas.
+- O banco **nunca** é copiado para os outros computadores: existe um só, no servidor.
+- **Login simples (decisão do Legacia):** e-mail e senha, pedidos antes de qualquer tela. O e-mail serve só como identificador de quem entra; o sistema **não envia e-mails**.
+  - Contas são criadas pelo Legacia, por um comando de linha no servidor (por exemplo `python -m radar.usuarios criar`). Não existe tela de cadastro aberto.
+  - A senha é guardada **somente como hash** (bcrypt ou argon2), na tabela `usuario`. Nunca em texto, nunca no código, nunca no Git.
+  - Senha esquecida: o Legacia redefine pelo mesmo comando no servidor. Sem recuperação por e-mail.
+  - "Simples" significa sem perfis e sem permissões diferentes: quem tem conta vê tudo. Mas o login é de verdade: sessão por usuário (`st.session_state`) e todas as páginas verificam se há sessão ativa antes de mostrar qualquer dado.
+  - Limite conhecido: na rede local a conexão é HTTP, sem criptografia. Aceitável em rede doméstica protegida; reavaliar se a rede deixar de ser só de vocês.
+  - Nenhum agente de IA cria contas reais nem escolhe senhas. Para testes, usar contas fictícias criadas só no banco de teste.
+- O endereço do Radar não deve ser exposto à internet (nada de redirecionamento de porta no roteador). O login protege contra quem está na mesma rede, não contra a internet aberta.
+- Backup do arquivo do banco continua sendo feito no servidor, fora do Git.
+
 ## Como trabalhar com Git
 
 - `main` guarda só código revisado e funcionando. Nada de commit direto na `main`.
@@ -197,7 +223,6 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 
 ## Pontos em aberto
 
-- Nomes finais das pastas e do arquivo principal
-- Se o acesso pela rede local entra na primeira versão
+- Login: quantas contas existirão no início (previsto: Legacia e Anna, cada um com o próprio e-mail e a própria senha) e por quanto tempo a sessão fica aberta antes de pedir a senha de novo.
 - Lista dos 20 produtos candidatos e dos links de anúncios
 - Resposta dos fornecedores. Os cinco listados no planejamento (Brasil Esotérico Atacado, Baú da Bruxa, Mandala Esotérica Atacado, Encantos do Mundo, Flute Incensos) são pontos de partida para cotação, **não** parceiros aprovados, e os dados deles não foram verificados.
