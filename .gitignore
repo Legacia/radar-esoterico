@@ -179,3 +179,35 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+# --- Radar Esotérico: dados e segredos ---
+# A barra no começo (/) limita a regra à pasta raiz do projeto,
+# para não esconder pastas de código com o mesmo nome.
+
+# Banco de dados e backups (dados comerciais reais)
+/data/
+/backups/
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.bak
+
+# Planilhas e relatórios importados ou exportados
+/imports/
+/exports/
+*.csv
+*.xlsx
+*.xls
+!exemplos/*.csv
+
+# Segredos: senhas, chaves e tokens
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Editor e sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
