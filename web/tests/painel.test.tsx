@@ -142,6 +142,25 @@ describe("Painel", () => {
     expect(chamadas.filter((c) => c.caminho === "/api/tarefas/2")).toHaveLength(1);
   });
 
+  it("depois de salvar pela gaveta, as caixinhas esperam o painel recarregar", async () => {
+    const chamadas = simular();
+    mostrar();
+    await userEvent.click(await screen.findByRole("button", { name: "Editar Avaliar amostra fictícia" }));
+    let liberar!: () => void;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (entrada, init) => {
+      chamadas.push({ caminho: String(entrada), init });
+      if (String(entrada) === "/api/painel") await new Promise<void>((r) => { liberar = r; });
+      return new Response(JSON.stringify(String(entrada) === "/api/painel" ? DADOS : { id: 2 }), { status: 200 });
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Salvar tarefa" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    const caixa = screen.getByRole("checkbox", { name: "Avaliar amostra fictícia" });
+    expect(caixa).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cadastrar tarefa" })).toBeDisabled();
+    liberar();
+    await waitFor(() => expect(caixa).not.toBeDisabled());
+  });
+
   it("erro da API no formulário aparece na gaveta", async () => {
     simular();
     mostrar();

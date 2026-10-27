@@ -162,10 +162,13 @@ function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluida
   const notificar = useNotificar();
   const [editando, setEditando] = useState<Tarefa | "nova" | null>(null);
   const [salvando, setSalvando] = useState<number | null>(null);
+  const [recarregando, setRecarregando] = useState(false);
+  // Enquanto algo salva ou o painel recarrega, nada parte dos dados antigos da tela.
+  const bloqueado = salvando !== null || recarregando;
   const total = tarefas.length;
 
   async function alternar(t: Tarefa) {
-    if (salvando !== null) return;
+    if (bloqueado) return;
     setSalvando(t.id);
     try {
       await pedir(`/tarefas/${t.id}`, { metodo: "PUT", corpo: { titulo: t.titulo, semana: t.semana, responsavel: t.responsavel, concluida: !t.concluida } });
@@ -181,7 +184,7 @@ function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluida
 
   return (
     <Caixa titulo="Plano de 30 dias"
-      acoes={<button type="button" className="botao" onClick={() => setEditando("nova")} disabled={salvando !== null}>Cadastrar tarefa</button>}>
+      acoes={<button type="button" className="botao" onClick={() => setEditando("nova")} disabled={bloqueado}>Cadastrar tarefa</button>}>
       <div className="progresso-rotulo">{concluidas} de {total} tarefas concluídas</div>
       <progress className="progresso" max={total || 1} value={concluidas} aria-label="Andamento do plano de 30 dias" />
       <div className="grade-4 semanas">
@@ -196,13 +199,13 @@ function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluida
                   <li key={t.id}>
                     <label className="tarefa">
                       <input type="checkbox" checked={!!t.concluida} onChange={() => alternar(t)}
-                        disabled={salvando !== null} />
+                        disabled={bloqueado} />
                       <span className={t.concluida ? "riscado" : undefined}>{t.titulo}</span>
                     </label>
                     <div className="tarefa-pe">
                       <span className="legenda-inline">{t.responsavel}</span>
                       <button type="button" className="botao-discreto link" onClick={() => setEditando(t)}
-                        disabled={salvando !== null}
+                        disabled={bloqueado}
                         aria-label={`Editar ${t.titulo}`}>Editar</button>
                     </div>
                   </li>
@@ -216,7 +219,12 @@ function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluida
         aoFechar={() => setEditando(null)}>
         {editando !== null && (
           <FormularioTarefa tarefa={editando === "nova" ? undefined : editando}
-            aoSalvar={() => { setEditando(null); notificar("Tarefa salva."); aoSalvar(); }} />
+            aoSalvar={() => {
+              setEditando(null);
+              notificar("Tarefa salva.");
+              setRecarregando(true);
+              aoSalvar().finally(() => setRecarregando(false));
+            }} />
         )}
       </Gaveta>
     </Caixa>
