@@ -161,6 +161,42 @@ describe("Painel", () => {
     await waitFor(() => expect(caixa).not.toBeDisabled());
   });
 
+  it("fechar a gaveta com Esc durante o salvamento mantém o plano travado", async () => {
+    const chamadas = simular();
+    mostrar();
+    await userEvent.click(await screen.findByRole("button", { name: "Editar Avaliar amostra fictícia" }));
+    let liberarPut!: () => void;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (entrada, init) => {
+      chamadas.push({ caminho: String(entrada), init });
+      if (String(entrada) === "/api/tarefas/2") await new Promise<void>((r) => { liberarPut = r; });
+      return new Response(JSON.stringify(String(entrada) === "/api/painel" ? DADOS : { id: 2 }), { status: 200 });
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Salvar tarefa" }));
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const caixa = screen.getByRole("checkbox", { name: "Avaliar amostra fictícia" });
+    expect(caixa).toBeDisabled();
+    await userEvent.click(caixa);
+    liberarPut();
+    await waitFor(() => expect(caixa).not.toBeDisabled());
+    expect(chamadas.filter((c) => c.caminho === "/api/tarefas/2")).toHaveLength(1);
+  });
+
+  it("erro com a gaveta já fechada vira notificação", async () => {
+    simular();
+    mostrar();
+    await userEvent.click(await screen.findByRole("button", { name: "Editar Avaliar amostra fictícia" }));
+    let liberar!: () => void;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+      await new Promise<void>((r) => { liberar = r; });
+      return new Response(JSON.stringify({ detail: "Tarefa não encontrada." }), { status: 400 });
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Salvar tarefa" }));
+    await userEvent.keyboard("{Escape}");
+    liberar();
+    expect(await screen.findByText("Tarefa não encontrada.")).toBeInTheDocument();
+  });
+
   it("erro da API no formulário aparece na gaveta", async () => {
     simular();
     mostrar();

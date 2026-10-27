@@ -158,33 +158,50 @@ function Funil({ etapas }: { etapas: DadosPainel["funil"] }) {
   );
 }
 
+type CorpoTarefa = { titulo: string; semana: number; responsavel: string; concluida: boolean };
+
 function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluidas: number; aoSalvar: () => Promise<void> }) {
   const notificar = useNotificar();
   const [editando, setEditando] = useState<Tarefa | "nova" | null>(null);
-  const [salvando, setSalvando] = useState<number | null>(null);
-  const [recarregando, setRecarregando] = useState(false);
-  // Enquanto algo salva ou o painel recarrega, nada parte dos dados antigos da tela.
-  const bloqueado = salvando !== null || recarregando;
+  // Uma trava só para o plano: liga no início de qualquer gravação e só desliga depois que o
+  // painel recarrega, mesmo que a gaveta seja fechada no meio. Assim nada parte de dados antigos.
+  const [ocupado, setOcupado] = useState(false);
+  const trava = useRef(false);
+  const gavetaAberta = useRef(false);
+  gavetaAberta.current = editando !== null;
   const total = tarefas.length;
 
-  async function alternar(t: Tarefa) {
-    if (bloqueado) return;
-    setSalvando(t.id);
+  async function gravar(caminho: string, metodo: "POST" | "PUT", corpo: CorpoTarefa, sucesso: string, daGaveta: boolean) {
+    if (trava.current) return;
+    trava.current = true;
+    setOcupado(true);
     try {
-      await pedir(`/tarefas/${t.id}`, { metodo: "PUT", corpo: { titulo: t.titulo, semana: t.semana, responsavel: t.responsavel, concluida: !t.concluida } });
-      notificar(t.concluida ? "Tarefa reaberta." : "Tarefa concluída.");
-      // A trava só sai depois que a tela tem os dados novos, para a edição não partir de uma cópia velha.
+      await pedir(caminho, { metodo, corpo });
+      if (daGaveta) setEditando(null);
+      notificar(sucesso);
       await aoSalvar();
     } catch (e) {
-      notificar(e instanceof ErroApi ? e.message : "Não foi possível salvar.", "erro");
+      const mensagem = e instanceof ErroApi ? e.message : "Não foi possível salvar.";
+      // Com a gaveta aberta o erro aparece nela; se já foi fechada, vira notificação.
+      if (daGaveta && gavetaAberta.current) throw new Error(mensagem);
+      notificar(mensagem, "erro");
     } finally {
-      setSalvando(null);
+      trava.current = false;
+      setOcupado(false);
     }
   }
 
+  const alternar = (t: Tarefa) => gravar(`/tarefas/${t.id}`, "PUT",
+    { titulo: t.titulo, semana: t.semana, responsavel: t.responsavel, concluida: !t.concluida },
+    t.concluida ? "Tarefa reaberta." : "Tarefa concluída.", false);
+
+  const salvarDaGaveta = (tarefa: Tarefa | undefined, corpo: CorpoTarefa) => tarefa
+    ? gravar(`/tarefas/${tarefa.id}`, "PUT", corpo, "Tarefa salva.", true)
+    : gravar("/tarefas", "POST", corpo, "Tarefa salva.", true);
+
   return (
     <Caixa titulo="Plano de 30 dias"
-      acoes={<button type="button" className="botao" onClick={() => setEditando("nova")} disabled={bloqueado}>Cadastrar tarefa</button>}>
+      acoes={<button type="button" className="botao" onClick={() => setEditando("nova")} disabled={ocupado}>Cadastrar tarefa</button>}>
       <div className="progresso-rotulo">{concluidas} de {total} tarefas concluídas</div>
       <progress className="progresso" max={total || 1} value={concluidas} aria-label="Andamento do plano de 30 dias" />
       <div className="grade-4 semanas">
@@ -199,13 +216,13 @@ function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluida
                   <li key={t.id}>
                     <label className="tarefa">
                       <input type="checkbox" checked={!!t.concluida} onChange={() => alternar(t)}
-                        disabled={bloqueado} />
+                        disabled={ocupado} />
                       <span className={t.concluida ? "riscado" : undefined}>{t.titulo}</span>
                     </label>
                     <div className="tarefa-pe">
                       <span className="legenda-inline">{t.responsavel}</span>
                       <button type="button" className="botao-discreto link" onClick={() => setEditando(t)}
-                        disabled={bloqueado}
+                        disabled={ocupado}
                         aria-label={`Editar ${t.titulo}`}>Editar</button>
                     </div>
                   </li>
@@ -219,45 +236,32 @@ function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluida
         aoFechar={() => setEditando(null)}>
         {editando !== null && (
           <FormularioTarefa tarefa={editando === "nova" ? undefined : editando}
-            aoSalvar={() => {
-              setEditando(null);
-              notificar("Tarefa salva.");
-              setRecarregando(true);
-              aoSalvar().finally(() => setRecarregando(false));
-            }} />
+            ocupado={ocupado} aoEnviar={(corpo) => salvarDaGaveta(editando === "nova" ? undefined : editando, corpo)} />
         )}
       </Gaveta>
     </Caixa>
   );
 }
 
-export function FormularioTarefa({ tarefa, aoSalvar }: { tarefa?: Tarefa; aoSalvar: () => void }) {
+export function FormularioTarefa({ tarefa, ocupado, aoEnviar }: {
+  tarefa?: Tarefa;
+  ocupado: boolean;
+  aoEnviar: (corpo: CorpoTarefa) => Promise<void>;
+}) {
   const [titulo, setTitulo] = useState(tarefa?.titulo ?? "");
   const [semana, setSemana] = useState(tarefa?.semana ?? 1);
   const [responsavel, setResponsavel] = useState(tarefa?.responsavel ?? "Legacia");
   const [concluida, setConcluida] = useState(!!tarefa?.concluida);
   const [erro, setErro] = useState<string | null>(null);
-  const [salvando, setSalvando] = useState(false);
-  // A trava em ref vale na hora; o estado só muda no próximo desenho da tela.
-  const emAndamento = useRef(false);
 
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
-    if (emAndamento.current) return;
-    emAndamento.current = true;
-    setSalvando(true);
+    if (ocupado) return;
     setErro(null);
     try {
-      const corpo = { titulo, semana, responsavel, concluida };
-      await (tarefa
-        ? pedir(`/tarefas/${tarefa.id}`, { metodo: "PUT", corpo })
-        : pedir("/tarefas", { corpo }));
-      aoSalvar();
+      await aoEnviar({ titulo, semana, responsavel, concluida });
     } catch (e) {
-      setErro(e instanceof ErroApi ? e.message : "Não foi possível salvar.");
-    } finally {
-      emAndamento.current = false;
-      setSalvando(false);
+      setErro(e instanceof Error ? e.message : "Não foi possível salvar.");
     }
   }
 
@@ -275,8 +279,8 @@ export function FormularioTarefa({ tarefa, aoSalvar }: { tarefa?: Tarefa; aoSalv
         <input type="checkbox" checked={concluida} onChange={(e) => setConcluida(e.target.checked)} />
         Tarefa concluída
       </label>
-      <button type="submit" className="botao botao-principal" disabled={salvando}>
-        {salvando ? "Salvando…" : "Salvar tarefa"}
+      <button type="submit" className="botao botao-principal" disabled={ocupado}>
+        {ocupado ? "Salvando…" : "Salvar tarefa"}
       </button>
     </form>
   );
