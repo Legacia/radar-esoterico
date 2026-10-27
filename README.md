@@ -197,3 +197,21 @@ A API já pode ser iniciada para testes:
 - Não há bloqueio por senhas erradas (decisão do Legacia); a proteção é a senha, guardada só como hash Argon2id.
 - Dinheiro sai como texto decimal (`"55.56"`) ou centavos inteiros; percentuais como fração em texto.
 - Rotas desta etapa: `entrar`, `sair`, `eu`, `painel`, `configuracao` e `calculadora/simular`. As demais entram junto com cada tela React.
+
+## Interface React (migração, etapa 2)
+
+Estrutura pronta: entrada com e-mail e senha, barra lateral com as oito telas, tema e componentes comuns.
+As telas em si chegam na etapa 3; até lá, o uso continua pelo Streamlit.
+
+Para montar e ver no servidor (precisa do Node.js LTS só neste computador):
+
+```powershell
+cd web
+npm ci
+npm run build
+cd ..
+.\.venv\Scripts\python.exe -m radar.servidor --endereco 127.0.0.1
+```
+
+Depois abra `http://127.0.0.1:8501`. Testes da interface: `npm test` dentro de `web/`.
+Para desenvolver com recarga automática: API em `--porta 8502` e `npm run dev` em `web/` (abre em `http://localhost:5173`).
