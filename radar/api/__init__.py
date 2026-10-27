@@ -15,12 +15,13 @@ from pydantic import BaseModel, StrictBool, StrictInt
 from radar.api.sessao import COOKIE, Sessoes, apagar_cookie, exigir_sessao, gravar_cookie
 from radar.banco import inicializar
 from radar.compras import obter_orcamento
-from radar.margem import calcular, preco_minimo
-from radar.margem.configuracao import obter_configuracao
+from radar.margem import Parametros, calcular, preco_minimo
+from radar.margem.configuracao import obter_configuracao, salvar_configuracao
 from radar.painel import obter_painel, salvar_tarefa
 from radar.usuarios import autenticar
-from radar.valores import dinheiro_texto
+from radar.valores import decimal_texto, dinheiro_texto, texto_decimal
 
+CENTAVO = Decimal("0.01")
 INTERFACE = Path(__file__).resolve().parents[2] / "web" / "dist"
 
 
@@ -34,6 +35,17 @@ class Tarefa(BaseModel):
     semana: StrictInt
     responsavel: str
     concluida: StrictBool = False
+
+
+class Configuracao(BaseModel):
+    """Percentuais como o usuário digita ("20" ou "20,5"); valores em reais ("4,50")."""
+    comissao: str
+    tributo: str
+    margem_alvo: str
+    tarifa_fixa: str
+    embalagem: str
+    outros: str
+    limite_cotacao_dias: StrictInt
 
 
 class Simulacao(BaseModel):
@@ -103,7 +115,21 @@ def alterar_tarefa(tarefa_id: int, dados: Tarefa):
 @protegido.get("/configuracao")
 def configuracao():
     config = obter_configuracao()
-    return {"parametros": _parametros(config.parametros), "limite_cotacao_dias": config.limite_cotacao_dias}
+    p = config.parametros
+    # "campos" traz os valores já no formato dos campos da tela (percentual e reais com vírgula).
+    campos = {"comissao": texto_decimal(p.comissao_pct * 100), "tributo": texto_decimal(p.tributo_pct * 100),
+              "margem_alvo": texto_decimal(p.margem_alvo_pct * 100), "tarifa_fixa": texto_decimal(p.tarifa_fixa.quantize(CENTAVO)),
+              "embalagem": texto_decimal(p.embalagem.quantize(CENTAVO)), "outros": texto_decimal(p.outros.quantize(CENTAVO))}
+    return {"parametros": _parametros(p), "campos": campos, "limite_cotacao_dias": config.limite_cotacao_dias}
+
+
+@protegido.put("/configuracao")
+def salvar_parametros(dados: Configuracao):
+    novos = Parametros(decimal_texto(dados.comissao) / 100, decimal_texto(dados.tributo) / 100,
+                       decimal_texto(dados.margem_alvo) / 100, dinheiro_texto(dados.tarifa_fixa),
+                       dinheiro_texto(dados.embalagem), dinheiro_texto(dados.outros))
+    salvar_configuracao(novos, dados.limite_cotacao_dias)
+    return configuracao()
 
 
 @protegido.post("/calculadora/simular")
