@@ -88,9 +88,12 @@ describe("entrada e sessão", () => {
     simularApi({ "/api/eu": [ANNA] });
     render(<App />);
     const sairBotao = await screen.findByRole("button", { name: "Sair" });
+    // Espera o Painel terminar de carregar antes de simular a queda, para só a saída falhar.
+    await screen.findByText("Fornecedores ativos");
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
     await userEvent.click(sairBotao);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível sair");
+    expect(await screen.findByText(/Não foi possível sair/)).toBeInTheDocument();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
     expect(screen.getByRole("navigation", { name: "Telas" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Entrar" })).toBeNull();
   });
