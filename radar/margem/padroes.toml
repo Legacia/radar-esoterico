@@ -1,0 +1,8 @@
+# Valores ilustrativos do AGENTS.md. A tela permite salvar outros parâmetros.
+comissao_pct = "0.20"
+tributo_pct = "0.06"
+margem_alvo_pct = "0.20"
+tarifa_fixa_centavos = 450
+embalagem_centavos = 250
+outros_centavos = 300
+limite_cotacao_dias = 15

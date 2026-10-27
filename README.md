@@ -1,7 +1,7 @@
-# Radar Esotérico — MVP 0.1, Bloco 1
+# Radar Esotérico — MVP 0.1, Blocos 1 e 2
 
 Ferramenta local de inteligência comercial da Tenda da Bruxa 2.0.
-Este bloco entrega a base, banco e login. Ainda não há cadastros comerciais ou indicadores.
+Inclui base, banco, login, fornecedores, produtos, SKUs e calculadora. Indicadores entram no Bloco 3.
 
 ## Instalar no servidor (Windows, Python 3.13)
 
@@ -78,3 +78,40 @@ fora do Git; em WAL, não copie apenas o `.db` enquanto o servidor estiver abert
 
 Código de negócio: `radar/`. Interface: `app/`. Novas telas devem chamar
 `exigir_login()` antes de mostrar dados, além da barreira na entrada principal.
+
+## Testar o Bloco 2
+
+1. Abra o Radar, entre com sua conta e use a navegação lateral.
+2. Em **Calculadora e parâmetros**, simule preço `59,90` e custo `20,00` com os parâmetros
+   iniciais: comissão 20%, tributo 6%, tarifa 4,50, embalagem 2,50, outros 3,00 e alvo 20%.
+   O resultado deve ser contribuição **R$ 14,33**, margem **23,9%** e preço mínimo **R$ 55,56**.
+3. Em **Fornecedores**, cadastre o fornecedor, condições comerciais e verificações manuais.
+   Registre contatos e mude a etapa conforme o acompanhamento real.
+4. Em **Produtos e SKUs**, cadastre produtos e lance as cotações do fornecedor. Cada cotação
+   registra custo, quantidade mínima e data. Informe também seu preço conservador de venda
+   para obter a estimativa de margem; em branco, o SKU não conta no checklist.
+5. Na ficha do fornecedor, tente **Promover a fornecedor oficial**: as pendências são exibidas
+   sem mudar a etapa. A promoção exige todas as verificações e três códigos de SKU distintos
+   com margem no alvo configurado, respeitando o piso de 20% aprovado pelo Legacia.
+   Descartar ou pausar exige motivo. Nenhuma dessas decisões é automática.
+
+Use dados comerciais somente no banco local. Os testes já cobrem o cenário completo com
+dados fictícios em bancos temporários. Não cadastre dados fictícios no banco real para testar.
+
+Parâmetros são salvos pela tela e compartilhados entre usuários. Os exemplos iniciais estão
+em `radar/margem/padroes.toml` e só são usados quando ainda não existe configuração salva.
+Dinheiro aceita vírgula decimal (ex.: `1.234,56`), com no máximo duas casas; percentuais
+são informados como `20` para 20%. Contas usam Decimal sem arredondamentos intermediários.
+Contribuição é exibida com duas casas, e margem com uma; o checklist compara a margem
+antes do arredondamento. O preço mínimo é arredondado para cima até o próximo centavo.
+
+A cotação mais recente por data de cada código do fornecedor é usada nas estimativas.
+Se houver duas na mesma data, prevalece a última registrada. Re-cotações preservam o histórico
+no banco e não contam como SKUs adicionais. O mesmo produto pode ter vários fornecedores.
+A data da última cotação do fornecedor acompanha a mais recente das cotações registradas.
+O aviso de cotação antiga ocorre quando a idade ultrapassa o limite configurado (inicial: 15 dias).
+O sistema não verifica CNPJ ou qualidade por conta própria: as confirmações são de vocês.
+
+O esquema é atualizado automaticamente para a versão 2 na próxima abertura, preservando
+usuários e dados do Bloco 1. Feche o Radar e faça o backup descrito acima antes de atualizar
+um banco que já tenha informações importantes.

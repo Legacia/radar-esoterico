@@ -110,6 +110,12 @@ Promoção a oficial exige tudo isto:
 - Margem em cenário conservador positiva, com alvo inicial de 20% de contribuição
 - Reposição confirmada
 
+Regra da margem na promoção (decisões do Legacia em 26/10/2026):
+
+- A margem precisa atingir o alvo configurado, nunca abaixo de 20%, em pelo menos **três produtos diferentes** do fornecedor. Vários códigos do mesmo produto contam como um só, pela melhor margem entre eles.
+- Vale a cotação mais recente de cada código. Códigos que só diferem em maiúsculas e minúsculas são o mesmo código.
+- Cotação mais antiga que o limite configurado gera aviso na tela, mas **não** impede a promoção.
+
 O sistema nunca promove sozinho. O botão fica disponível, mas lista o que falta e não muda o status enquanto o checklist estiver incompleto. A data da promoção é registrada.
 
 ## Cálculo de margem
@@ -237,3 +243,10 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 - `fornecedor` inclui os campos de verificação `cnpj_verificado`, `condicoes_verificadas`, `emite_nota`, `amostra_avaliada` e `reposicao_confirmada`; `produto` inclui `especificacoes_conferidas`, `procedencia_conferida` e `qualidade_conferida`. São registros para as regras dos próximos blocos, ainda sem promoção ou decisão de compra.
 - `radar/usuarios.py` gerencia contas e autenticação; `radar/sessoes.py` controla a duração da sessão. `app/acesso.py` concentra a barreira de login; `app/painel.py` a aplica também diretamente na página.
 - `radar/conectores/base.py` define somente o contrato opcional de marketplace; não há implementação de coleta.
+
+## Estrutura e esquema implementados no Bloco 2
+
+- Migração 2 acrescenta `sku_fornecedor.preco_venda_centavos` (opcional): preço conservador informado manualmente para estimar margem, sem se confundir com os preços observados do Bloco 3. Histórico de cotações preservado; a cotação atual é a mais recente por fornecedor e código (sem diferenciar maiúsculas), com desempate por id.
+- Nova tabela `configuracao`, com uma linha compartilhada: comissão, tributo e margem-alvo como frações em texto decimal; tarifa fixa, embalagem e outros em centavos inteiros; limite de cotação antiga em dias. Valores iniciais ficam em `radar/margem/padroes.toml`; edição pela tela, sem modificar fórmulas.
+- `radar/margem/` implementa fórmulas e configuração; `radar/fornecedores/regras.py` o checklist puro; `radar/fornecedores/__init__.py` as ações persistidas; `radar/produtos.py` catálogo e cotações; `radar/valores.py` validação e apresentação de valores/datas.
+- Novas telas protegidas: `app/fornecedores.py`, `app/catalogo.py`, `app/calculadora.py`. Componentes comuns de apresentação em `app/componentes.py`.

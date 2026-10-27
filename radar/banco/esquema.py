@@ -83,3 +83,19 @@ MIGRACOES = ((
     "CREATE INDEX idx_interacao_fornecedor_data ON interacao(fornecedor_id, data)",
     "CREATE INDEX idx_sku_produto ON sku_fornecedor(produto_id)",
 ),)
+
+# Bloco 2: adição sem modificar a migração já publicada.
+MIGRACOES += ((
+    """ALTER TABLE sku_fornecedor ADD COLUMN preco_venda_centavos INTEGER
+        CHECK(preco_venda_centavos IS NULL OR
+            (typeof(preco_venda_centavos) = 'integer' AND preco_venda_centavos > 0))""",
+    """CREATE TABLE configuracao (
+        id INTEGER PRIMARY KEY CHECK(id=1),
+        comissao_pct TEXT NOT NULL, tributo_pct TEXT NOT NULL, margem_alvo_pct TEXT NOT NULL,
+        tarifa_fixa_centavos INTEGER NOT NULL CHECK(typeof(tarifa_fixa_centavos)='integer' AND tarifa_fixa_centavos >= 0),
+        embalagem_centavos INTEGER NOT NULL CHECK(typeof(embalagem_centavos)='integer' AND embalagem_centavos >= 0),
+        outros_centavos INTEGER NOT NULL CHECK(typeof(outros_centavos)='integer' AND outros_centavos >= 0),
+        limite_cotacao_dias INTEGER NOT NULL CHECK(typeof(limite_cotacao_dias)='integer' AND limite_cotacao_dias BETWEEN 1 AND 3650)
+    )""",
+    "CREATE INDEX idx_sku_fornecedor_codigo_data ON sku_fornecedor(fornecedor_id, codigo, data_cotacao)",
+),)
