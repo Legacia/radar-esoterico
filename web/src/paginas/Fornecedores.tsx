@@ -137,12 +137,18 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
   const [versao, setVersao] = useState(0);
   // Pendências da última tentativa de promoção: ficam aqui fora para sobreviver à recarga da ficha.
   const [faltam, setFaltam] = useState<string[] | null>(null);
-  const carregar = useCallback(() => pedir<Ficha>(`/fornecedores/${id}`).then(
-    (f) => {
-      // Resposta atrasada de outro fornecedor nunca entra nesta ficha (e nunca seria salva nela).
-      if (f.id !== id) return;
-      setFicha(f); setVersao((v) => v + 1); setErro(null);
-    }, (e) => setErro(mensagemDeErro(e))), [id]);
+  // Cada consulta recebe um número; só a resposta da mais recente entra na tela. Assim uma
+  // resposta atrasada (do mesmo ou de outro fornecedor) nunca substitui dados mais novos.
+  const ultimaConsulta = useRef(0);
+  const carregar = useCallback(() => {
+    const consulta = ++ultimaConsulta.current;
+    return pedir<Ficha>(`/fornecedores/${id}`).then(
+      (f) => {
+        if (consulta !== ultimaConsulta.current || f.id !== id) return;
+        setFicha(f); setVersao((v) => v + 1); setErro(null);
+      },
+      (e) => { if (consulta === ultimaConsulta.current) setErro(mensagemDeErro(e)); });
+  }, [id]);
   useEffect(() => { setFicha(null); carregar(); }, [carregar]);
   // Ficha aberta enquanto outra gravação corria: fica travada até ela acabar e, se deu certo,
   // até buscar de novo os dados salvos. A ficha que gravou já recarrega dentro da própria gravação.

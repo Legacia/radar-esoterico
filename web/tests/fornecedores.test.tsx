@@ -270,6 +270,41 @@ describe("Fornecedores", () => {
     expect(chamadas.filter((c) => c.caminho === "/api/fornecedores/1" && c.metodo === "GET")).toHaveLength(2);
   });
 
+  it("consulta antiga da mesma ficha que chega por último é descartada", async () => {
+    simular();
+    mostrar("#/fornecedores?ficha=1");
+    let ficha = await screen.findByRole("dialog", { name: "Fornecedor fictício Alfa" });
+    await userEvent.click(within(ficha).getByRole("tab", { name: "Condições e verificações" }));
+    await userEvent.click(within(ficha).getByLabelText("Emite nota fiscal"));
+    let liberarPut!: () => void;
+    const liberarGets: (() => void)[] = [];
+    let salvo = false;
+    let consultas = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (entrada, init) => {
+      const caminho = String(entrada);
+      if (init?.method === "PUT") { await new Promise<void>((r) => { liberarPut = r; }); salvo = true; }
+      if (caminho === "/api/fornecedores/1" && init?.method === "GET") {
+        const nota = salvo ? 1 : 0;
+        // A consulta feita com a ficha reaberta (antes de salvar) demora mais que as outras.
+        if (++consultas === 1) await new Promise<void>((r) => { liberarGets.push(r); });
+        return new Response(JSON.stringify({ ...FICHA, emite_nota: nota }), { status: 200 });
+      }
+      return new Response(JSON.stringify(caminho === "/api/fornecedores" ? LISTA : { id: 1 }), { status: 200 });
+    });
+    await userEvent.click(within(ficha).getByRole("button", { name: "Salvar fornecedor" }));
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    window.location.hash = "#/fornecedores?ficha=1";
+    await waitFor(() => expect(consultas).toBe(1));
+    liberarPut();
+    ficha = await screen.findByRole("dialog", { name: "Fornecedor fictício Alfa" });
+    await userEvent.click(await within(ficha).findByRole("tab", { name: "Condições e verificações" }));
+    await waitFor(() => expect(within(ficha).getByLabelText("Emite nota fiscal")).toBeChecked());
+    liberarGets.forEach((r) => r());
+    await new Promise((r) => setTimeout(r, 50));
+    expect(within(ficha).getByLabelText("Emite nota fiscal")).toBeChecked();
+  });
+
   it("abas trocam com as setas do teclado", async () => {
     simular();
     mostrar("#/fornecedores?ficha=1");
