@@ -59,3 +59,14 @@ export function dataBr(iso: string): string {
   if (!partes) throw new Error(`Data inválida: ${iso}`);
   return `${partes[3]}/${partes[2]}/${partes[1]}`;
 }
+
+/** Centavos para o texto de um campo de edição: 30000 → "300,00". */
+export function textoDeCentavos(centavos: number): string {
+  return reaisDeCentavos(centavos).replace("R$ ", "").replace(/\./g, "");
+}
+
+/** Data de hoje no fuso do computador, em ISO ("2026-10-27"), para campos de data. */
+export function hojeIso(agora = new Date()): string {
+  const doisDigitos = (n: number) => String(n).padStart(2, "0");
+  return `${agora.getFullYear()}-${doisDigitos(agora.getMonth() + 1)}-${doisDigitos(agora.getDate())}`;
+}
