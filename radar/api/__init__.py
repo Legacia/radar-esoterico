@@ -146,7 +146,7 @@ def simular(dados: Simulacao):
 
 
 # Rotas de cada tela, registradas no mesmo roteador protegido.
-from radar.api import (fornecedores as _fornecedores, importar as _importar, kits as _kits,  # noqa: E402,F401
+from radar.api import (compras as _compras, fornecedores as _fornecedores, importar as _importar, kits as _kits,  # noqa: E402,F401
                        pesquisa as _pesquisa, produtos as _produtos)
 
 
