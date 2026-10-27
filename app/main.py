@@ -15,6 +15,10 @@ from app.painel import mostrar
 from app.fornecedores import mostrar as mostrar_fornecedores
 from app.catalogo import mostrar as mostrar_catalogo
 from app.calculadora import mostrar as mostrar_calculadora
+from app.pesquisa import mostrar as mostrar_pesquisa
+from app.importar import mostrar as mostrar_importacao
+from app.compras import mostrar as mostrar_compras
+from app.kits import mostrar as mostrar_kits
 
 st.set_page_config(page_title="Radar Esotérico", page_icon="🔮")
 inicializar()
@@ -25,5 +29,9 @@ pagina = st.navigation([
     st.Page(mostrar_fornecedores, title="Fornecedores", url_path="fornecedores"),
     st.Page(mostrar_catalogo, title="Produtos e SKUs", url_path="produtos"),
     st.Page(mostrar_calculadora, title="Calculadora e parâmetros", url_path="calculadora"),
+    st.Page(mostrar_pesquisa, title="Pesquisa de oportunidades", url_path="pesquisa"),
+    st.Page(mostrar_importacao, title="Importar CSV", url_path="importar"),
+    st.Page(mostrar_kits, title="Kits", url_path="kits"),
+    st.Page(mostrar_compras, title="Decisão de compra", url_path="compras"),
 ])
 pagina.run()

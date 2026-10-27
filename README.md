@@ -1,7 +1,7 @@
-# Radar Esotérico — MVP 0.1, Blocos 1 e 2
+# Radar Esotérico — MVP 0.1, Blocos 1, 2 e 3
 
 Ferramenta local de inteligência comercial da Tenda da Bruxa 2.0.
-Inclui base, banco, login, fornecedores, produtos, SKUs e calculadora. Indicadores entram no Bloco 3.
+Inteligência comercial local: login, fornecedores, produtos, cotações, mercado, margem, planejamento de compras, kits e painel.
 
 ## Instalar no servidor (Windows, Python 3.13)
 
@@ -91,8 +91,10 @@ Código de negócio: `radar/`. Interface: `app/`. Novas telas devem chamar
    registra custo, quantidade mínima e data. Informe também seu preço conservador de venda
    para obter a estimativa de margem; em branco, o SKU não conta no checklist.
 5. Na ficha do fornecedor, tente **Promover a fornecedor oficial**: as pendências são exibidas
-   sem mudar a etapa. A promoção exige todas as verificações e três códigos de SKU distintos
+   sem mudar a etapa. A promoção exige todas as verificações e três produtos diferentes
    com margem no alvo configurado, respeitando o piso de 20% aprovado pelo Legacia.
+   Vários códigos do mesmo produto contam como um só, pela melhor margem entre as
+   cotações atuais desses códigos.
    Descartar ou pausar exige motivo. Nenhuma dessas decisões é automática.
 
 Use dados comerciais somente no banco local. Os testes já cobrem o cenário completo com
@@ -112,6 +114,70 @@ A data da última cotação do fornecedor acompanha a mais recente das cotaçõe
 O aviso de cotação antiga ocorre quando a idade ultrapassa o limite configurado (inicial: 15 dias).
 O sistema não verifica CNPJ ou qualidade por conta própria: as confirmações são de vocês.
 
-O esquema é atualizado automaticamente para a versão 2 na próxima abertura, preservando
+O esquema é atualizado automaticamente para a versão 3 na próxima abertura, preservando
 usuários e dados do Bloco 1. Feche o Radar e faça o backup descrito acima antes de atualizar
 um banco que já tenha informações importantes.
+
+## Bloco 3: mercado, compras, kits e painel
+
+Todas as telas exigem login. Nenhuma delas faz pedidos, pagamentos ou coleta automática.
+
+### Anúncios e CSV
+
+Na **Pesquisa de oportunidades**, cadastre um anúncio e seus preços datados manualmente.
+Em **Importar CSV**, selecione um arquivo UTF-8 (aceita BOM), separado por ponto e vírgula.
+Cabeçalho obrigatório: `marketplace;titulo;url;preco;data`. Opcionais: `produto;sinal`.
+Preço: `59,90`; data: `2026-10-26`; URL: http/https. A coluna produto recebe o nome exato de
+um produto cadastrado, sem diferenciar maiúsculas. Nomes repetidos precisam ser corrigidos
+antes da importação. Produto em branco deixa o anúncio sem vínculo para associar na Pesquisa.
+
+O único CSV versionado é `exemplos/anuncios_ficticios.csv`, com dados inteiramente fictícios.
+Teste esse arquivo somente em banco de teste; não misture esses exemplos aos seus dados reais.
+Cada linha válida é aceita; erros aparecem com número da linha. Aspas ou separadores quebrados
+que impeçam ler o restante do arquivo são relatados; corrija a estrutura antes de reimportar.
+Repetir marketplace, URL, data e preço não duplica a observação. Preços diferentes ou em datas
+diferentes ficam no histórico. Marketplace é normalizado sem diferenciar maiúsculas.
+
+Na Pesquisa, escolha produto, marketplace e uma cotação com data e fornecedor. O custo vem
+dessa cotação. Cada anúncio entra uma vez nos indicadores com seu preço mais recente; a aba
+Preços mostra também o histórico. Trocar a cotação muda margens e preço mínimo. Sinais como
+“em alta” são informativos e nunca entram nos cálculos. Preço anunciado não comprova demanda.
+
+### Decisão de compra
+
+Configure orçamento (inicial R$ 1.000) e reserva (inicial zero; ajuste antes de planejar).
+Cada produto tem uma cotação escolhida, quantidade, preço conservador e justificativas
+separadas para demanda e concorrência. “Produto validado” é confirmação manual com justificativa,
+independente desses critérios. O total comprometido inclui todos os itens, inclusive os pendentes.
+
+Os seis critérios seguem o AGENTS.md e as decisões do Legacia: fornecedor ativo com CNPJ,
+condições e nota confirmados; produto conferido; margem positiva no alvo configurado com piso
+de 20%; demanda e concorrência confirmadas com justificativas; estoque com quantidade mínima
+da cotação atendida, produto não validado em até 20% do orçamento e total dentro do orçamento
+após a reserva. Acima do limite aparece aviso e o critério Estoque falha; nenhuma compra é feita.
+Fornecedor não precisa estar na etapa Oficial para cumprir os dados exigidos por esse critério.
+O preço e a cotação escolhidos ficam registrados no plano; novas cotações não trocam o custo
+silenciosamente. Altere a escolha quando quiser atualizar o cenário.
+
+### Kits e estoque por componente
+
+Cadastre o kit, seus produtos, quantidades e a cotação de custo de cada componente.
+Informe o estoque físico por produto e quantos kits deseja planejar (zero tira um kit do plano).
+A tela calcula custo e faltas por componente, somando também os componentes compartilhados
+entre todos os kits planejados. Composição sem cotação não recebe custo inventado.
+As quantidades são planejamento: não reservam nem baixam estoque e não entram automaticamente
+no orçamento. Registre as compras de componentes na Decisão de compra.
+
+### Painel e plano de 30 dias
+
+O Painel conta fornecedores ativos, produtos cadastrados, produtos prontos no plano e valor
+comprometido. Cadastre e edite tarefas por semana (1 a 4), responsável e conclusão.
+O funil mostra fornecedores por etapa. Pendências usam as cotações atuais e a data do dia:
+cotação acima do limite, margem abaixo do alvo, amostra não avaliada na etapa Em avaliação,
+e contato explicitamente marcado Aguardando resposta há mais de 5 dias na etapa Em contato.
+Resposta recebida encerra a espera; contatos neutros não alteram essa situação. Contatos antigos
+sem classificação não são presumidos sem resposta. Legacia é sugerido para contato, cotação
+e margem; Anna para amostra. As sugestões não enviam mensagens a ninguém.
+
+O esquema 3 preserva os dados das versões anteriores. Os testes usam bancos temporários,
+inclusive para importar o CSV fictício duas vezes e exercitar critérios de compra e kits.

@@ -1,0 +1,4 @@
+marketplace;titulo;url;preco;data;produto;sinal
+Marketplace fictício;Incenso fictício com suporte;https://example.invalid/incenso-1;59,90;2026-10-26;;em alta
+Marketplace fictício;Outro anúncio fictício de incenso;https://example.invalid/incenso-2;64,90;2026-10-26;;mais vendido
+Outro marketplace fictício;Terceiro anúncio fictício;https://example.invalid/incenso-3;54,90;2026-10-26;;

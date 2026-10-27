@@ -99,3 +99,37 @@ MIGRACOES += ((
     )""",
     "CREATE INDEX idx_sku_fornecedor_codigo_data ON sku_fornecedor(fornecedor_id, codigo, data_cotacao)",
 ),)
+
+# Bloco 3: preservar as migrações 1 e 2 já revisadas.
+MIGRACOES += ((
+    "ALTER TABLE produto ADD COLUMN validado INTEGER NOT NULL DEFAULT 0 CHECK(validado IN (0,1))",
+    """ALTER TABLE produto ADD COLUMN justificativa_validacao TEXT NOT NULL DEFAULT ''
+        CHECK(validado=0 OR length(trim(justificativa_validacao))>0)""",
+    """ALTER TABLE produto ADD COLUMN estoque_atual INTEGER NOT NULL DEFAULT 0
+        CHECK(typeof(estoque_atual)='integer' AND estoque_atual>=0)""",
+    """ALTER TABLE interacao ADD COLUMN situacao_resposta TEXT
+        CHECK(situacao_resposta IS NULL OR situacao_resposta IN ('aguardando','recebida'))""",
+    "ALTER TABLE kit_item ADD COLUMN sku_fornecedor_id INTEGER REFERENCES sku_fornecedor(id)",
+    """ALTER TABLE kit ADD COLUMN quantidade_planejada INTEGER NOT NULL DEFAULT 0
+        CHECK(typeof(quantidade_planejada)='integer' AND quantidade_planejada>=0)""",
+    """CREATE TABLE orcamento (
+        id INTEGER PRIMARY KEY CHECK(id=1),
+        total_centavos INTEGER NOT NULL CHECK(typeof(total_centavos)='integer' AND total_centavos>0),
+        reserva_centavos INTEGER NOT NULL CHECK(typeof(reserva_centavos)='integer'
+            AND reserva_centavos>=0 AND reserva_centavos<=total_centavos)
+    )""",
+    "INSERT INTO orcamento VALUES(1,100000,0)",
+    """CREATE TABLE plano_compra (
+        produto_id INTEGER PRIMARY KEY REFERENCES produto(id),
+        sku_fornecedor_id INTEGER NOT NULL REFERENCES sku_fornecedor(id),
+        quantidade INTEGER NOT NULL CHECK(typeof(quantidade)='integer' AND quantidade>0),
+        preco_venda_centavos INTEGER NOT NULL CHECK(typeof(preco_venda_centavos)='integer' AND preco_venda_centavos>0),
+        demanda_confirmada INTEGER NOT NULL DEFAULT 0 CHECK(demanda_confirmada IN (0,1)),
+        justificativa_demanda TEXT NOT NULL DEFAULT '',
+        concorrencia_confirmada INTEGER NOT NULL DEFAULT 0 CHECK(concorrencia_confirmada IN (0,1)),
+        justificativa_concorrencia TEXT NOT NULL DEFAULT '',
+        CHECK(demanda_confirmada=0 OR length(trim(justificativa_demanda))>0),
+        CHECK(concorrencia_confirmada=0 OR length(trim(justificativa_concorrencia))>0)
+    )""",
+    "CREATE INDEX idx_preco_anuncio_data ON preco_observado(anuncio_id,data)",
+),)

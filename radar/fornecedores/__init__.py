@@ -60,16 +60,18 @@ def alterar_etapa(fornecedor_id, etapa, motivo="", caminho=None):
                   (etapa, motivo.strip(), motivo.strip(), fornecedor_id))
 
 
-def registrar_interacao(fornecedor_id, data, canal, resumo, caminho=None):
+def registrar_interacao(fornecedor_id, data, canal, resumo, caminho=None, situacao_resposta=None):
     canal = obrigatorio(canal, "o canal de contato")
     resumo = obrigatorio(resumo, "o resumo do contato")
+    if situacao_resposta not in (None, "aguardando", "recebida"):
+        raise ValueError("Situação da resposta inválida.")
     data_texto = data_iso(data)
     if data > date.today():
         raise ValueError("O contato não pode ter data futura.")
     with conectar(caminho) as c:
         _obter(c, fornecedor_id)
-        return c.execute("INSERT INTO interacao(fornecedor_id, data, canal, resumo) VALUES (?, ?, ?, ?)",
-                         (fornecedor_id, data_texto, canal, resumo)).lastrowid
+        return c.execute("INSERT INTO interacao(fornecedor_id, data, canal, resumo, situacao_resposta) VALUES (?, ?, ?, ?, ?)",
+                         (fornecedor_id, data_texto, canal, resumo, situacao_resposta)).lastrowid
 
 
 def listar_interacoes(fornecedor_id, caminho=None):

@@ -91,7 +91,7 @@ def mostrar():
     st.subheader("Histórico de contatos")
     contatos = listar_interacoes(escolhido)
     if contatos:
-        st.dataframe([{"Data": data_br(r["data"]), "Canal": r["canal"], "Resumo": r["resumo"]}
+        st.dataframe([{"Data": data_br(r["data"]), "Canal": r["canal"], "Resumo": r["resumo"], "Resposta": {None: "Não informada", "aguardando": "Aguardando", "recebida": "Recebida"}[r["situacao_resposta"]]}
                       for r in contatos], hide_index=True, width="stretch")
     else:
         st.info("Nenhum contato registrado.")
@@ -99,6 +99,8 @@ def mostrar():
         data = st.date_input("Data do contato", value=date.today(), max_value=date.today())
         canal = st.text_input("Canal")
         resumo = st.text_area("Resumo do contato")
+        situacao = st.selectbox("Situação da resposta", [None, "aguardando", "recebida"],
+            format_func=lambda s: {None: "Não informar", "aguardando": "Aguardando resposta", "recebida": "Resposta recebida"}[s])
         adicionar = st.form_submit_button("Adicionar contato")
     if adicionar:
-        executar(lambda: registrar_interacao(escolhido, data, canal, resumo), "Contato registrado.")
+        executar(lambda: registrar_interacao(escolhido, data, canal, resumo, situacao_resposta=situacao), "Contato registrado.")
