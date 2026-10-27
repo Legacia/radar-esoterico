@@ -152,10 +152,18 @@ def test_campo_com_multiplas_linhas_e_erro_recuperavel_preserva_as_demais(db):
     assert r.erros[0]["linha"] == 4
 
 
-def test_dois_precos_no_mesmo_dia_ficam_no_historico_e_o_ultimo_importado_vale(db):
-    dia = date.today().isoformat()
-    relatorio = importar_csv(CABECALHO + linha(preco="10,00", data=dia) + linha(preco="12,00", data=dia), db)
+def test_mesmo_dia_vale_o_ultimo_preco_novo_e_repetido_nao_volta_a_valer(db):
+    _, produto, cotacao = criar_base(db)
+    preco = lambda valor: linha(preco=valor, produto="Produto fictício A")
+    relatorio = importar_csv(CABECALHO + preco("10,00") + preco("12,00"), db)
     assert (relatorio.importadas, relatorio.repetidas, relatorio.erros) == (2, 0, [])
-    importar_csv(CABECALHO + linha(preco="10,00", data=dia), db)
-    with conectar(db) as c:
-        assert c.execute("SELECT count(*) FROM preco_observado").fetchone()[0] == 2
+    r = pesquisar(produto, cotacao, caminho=db)
+    assert [l["preco"] for l in r["linhas"]] == [D("12.00")]
+    assert len(r["historico"]) == 2
+    # Comportamento atual, mantido de propósito: um preço já visto no mesmo dia conta como
+    # repetido e não volta a valer, mesmo que seja o último importado.
+    relatorio = importar_csv(CABECALHO + preco("10,00"), db)
+    assert (relatorio.importadas, relatorio.repetidas) == (0, 1)
+    r = pesquisar(produto, cotacao, caminho=db)
+    assert [l["preco"] for l in r["linhas"]] == [D("12.00")]
+    assert len(r["historico"]) == 2
