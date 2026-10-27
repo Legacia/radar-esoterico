@@ -224,6 +224,20 @@ function CamposPlano({ produto, item, ocupado, aoEnviar }: {
   const [textoValidacao, setTextoValidacao] = useState(produto.justificativa_validacao ?? "");
   const [erro, setErro] = useState<string | null>(null);
 
+  // Sem plano salvo, quantidade e preço acompanham a cotação escolhida (quantidade mínima e preço
+  // conservador dela). Com plano salvo, os valores dele ficam como estão.
+  function aplicarPadroes(cotacao: Cotacao) {
+    if (item) return;
+    setQuantidade(String(cotacao.quantidade_minima));
+    setPreco(cotacao.preco_venda_centavos === null ? "" : textoDeCentavos(cotacao.preco_venda_centavos));
+  }
+
+  function trocarCotacao(id: number) {
+    setCotacaoId(id);
+    const cotacao = cotacoes?.find((c) => c.id === id);
+    if (cotacao) aplicarPadroes(cotacao);
+  }
+
   useEffect(() => {
     let valido = true;
     pedir<Cotacao[]>(`/pesquisa/cotacoes?produto_id=${produto.id}`).then((lista) => {
@@ -233,11 +247,7 @@ function CamposPlano({ produto, item, ocupado, aoEnviar }: {
       const escolhida = lista.find((c) => c.id === item?.sku_fornecedor_id) ?? lista[0];
       if (!escolhida) return;
       setCotacaoId(escolhida.id);
-      // Sem plano anterior, começa pela quantidade mínima e pelo preço conservador da cotação.
-      if (!item) {
-        setQuantidade(String(escolhida.quantidade_minima));
-        if (escolhida.preco_venda_centavos !== null) setPreco(textoDeCentavos(escolhida.preco_venda_centavos));
-      }
+      aplicarPadroes(escolhida);
     }, (e) => { if (valido) setErro(mensagemDeErro(e)); });
     return () => { valido = false; };
   }, [produto.id, item]);
@@ -269,7 +279,7 @@ function CamposPlano({ produto, item, ocupado, aoEnviar }: {
     <form className="formulario" onSubmit={enviar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <label>Cotação para o plano
-        <select value={cotacaoId ?? ""} onChange={(e) => setCotacaoId(Number(e.target.value))}>
+        <select value={cotacaoId ?? ""} onChange={(e) => trocarCotacao(Number(e.target.value))}>
           {cotacoes.map((c) => (
             <option key={c.id} value={c.id}>{c.fornecedor} · {c.codigo} · {dataBr(c.data_cotacao)} · {reaisDeCentavos(c.custo_centavos)}</option>
           ))}

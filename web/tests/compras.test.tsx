@@ -23,7 +23,8 @@ const LOTE: Lote = {
 };
 const COTACOES: Record<string, unknown[]> = {
   "1": [{ id: 8, fornecedor: "Fornecedor fictício", codigo: "KIT", data_cotacao: "2026-10-20", custo_centavos: 2000, quantidade_minima: 5, preco_venda_centavos: 5990 }],
-  "2": [{ id: 9, fornecedor: "Fornecedor fictício", codigo: "CRI", data_cotacao: "2026-10-21", custo_centavos: 900, quantidade_minima: 10, preco_venda_centavos: 1800 }],
+  "2": [{ id: 9, fornecedor: "Fornecedor fictício", codigo: "CRI", data_cotacao: "2026-10-21", custo_centavos: 900, quantidade_minima: 10, preco_venda_centavos: 1800 },
+        { id: 10, fornecedor: "Outro fornecedor fictício", codigo: "CR2", data_cotacao: "2026-10-22", custo_centavos: 800, quantidade_minima: 25, preco_venda_centavos: null }],
 };
 
 type Chamada = { caminho: string; metodo: string; corpo: unknown };
@@ -88,6 +89,26 @@ describe("Decisão de compra", () => {
       cotacao_id: 9, quantidade: 10, preco_venda: "18,00", demanda: false, concorrencia: false,
       validado: true, justificativa_validacao: "Venda teste fictícia" } });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("produto novo: trocar a cotação troca a quantidade mínima e o preço; plano salvo não muda", async () => {
+    simular();
+    mostrar();
+    await userEvent.click(await screen.findByRole("button", { name: "Adicionar produto ao plano" }));
+    let gaveta = screen.getByRole("dialog", { name: "Adicionar produto ao plano" });
+    await waitFor(() => expect(within(gaveta).getByLabelText("Quantidade planejada")).toHaveValue("10"));
+    await userEvent.selectOptions(within(gaveta).getByLabelText("Cotação para o plano"), "10");
+    expect(within(gaveta).getByLabelText("Quantidade planejada")).toHaveValue("25");
+    expect(within(gaveta).getByLabelText("Preço conservador de venda no plano (R$)")).toHaveValue("");
+    await userEvent.selectOptions(within(gaveta).getByLabelText("Cotação para o plano"), "9");
+    expect(within(gaveta).getByLabelText("Quantidade planejada")).toHaveValue("10");
+    expect(within(gaveta).getByLabelText("Preço conservador de venda no plano (R$)")).toHaveValue("18,00");
+    await userEvent.keyboard("{Escape}");
+
+    await userEvent.click(within(screen.getByRole("article", { name: "Kit fictício" })).getByRole("button", { name: "Editar" }));
+    gaveta = screen.getByRole("dialog", { name: "Editar no plano: Kit fictício" });
+    await waitFor(() => expect(within(gaveta).getByLabelText("Cotação para o plano")).toHaveValue("8"));
+    expect(within(gaveta).getByLabelText("Quantidade planejada")).toHaveValue("11");
   });
 
   it("editar traz o plano salvo e erro da regra fica na gaveta", async () => {
