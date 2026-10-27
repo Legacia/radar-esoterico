@@ -217,10 +217,19 @@ Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Lega
 ## Como trabalhar com Git
 
 - `main` guarda só código revisado e funcionando. Nada de commit direto na `main`.
-- **Papéis invertidos (decisão do Legacia em 27/10/2026):** o **Claude Code constrói** (regras, API, interface React e os testes de cada mudança); o **Codex revisa** (bugs, casos de borda, erros em contas de dinheiro e margem, rotas sem login, qualidade dos dados) e acrescenta testes que faltarem. A aprovação final e a mesclagem de cada pull request são do Legacia.
+- **Papéis invertidos (decisão do Legacia em 27/10/2026):** o **Claude Code constrói** (regras, API, interface React e os testes de cada mudança); o **Codex revisa** (bugs, casos de borda, erros em contas de dinheiro e margem, rotas sem login, qualidade dos dados) e acrescenta testes que faltarem. As mesclagens são feitas pelos agentes, conforme as regras abaixo.
 - Ramificações: `claude/<tarefa>` para construção; `codex/revisao-<tarefa>` para correções e testes da revisão, criada a partir da ramificação revisada e enviada como pull request contra ela. As ramificações `codex/mvp-...` antigas são só histórico.
-- Tudo entra por pull request, revisado pelo Codex e aprovado pelo Legacia.
-- **Dois agentes nunca editam os mesmos arquivos ao mesmo tempo.** Enquanto o Codex revisa uma ramificação, o Claude Code não altera os mesmos arquivos; correções pedidas na revisão são feitas por um dos dois, combinado com o Legacia.
+- Tudo entra por pull request revisado pelo Codex.
+- **Mesclagem pelos agentes (decisão do Legacia em 27/10/2026: "eu não vou mesclar nada, façam isso vocês").** O Legacia não mescla; os agentes mesclam sozinhos, sem pedir autorização a cada vez, desde que:
+  1. O Codex tenha concluído a revisão e registrado o relato no pull request.
+  2. O Claude Code tenha avaliado cada apontamento: os erros confirmados estão corrigidos e os pontos contestados estão explicados no pull request.
+  3. Todos os testes passem (`pytest`, e os testes da interface quando existirem), `pip check` não acuse problema e `git diff --check` esteja limpo, na versão já mesclada.
+  4. Nenhum banco, CSV real, planilha, `.env`, segredo, `node_modules/` ou `web/dist/` esteja no diff.
+  5. Nenhuma pergunta de regra de negócio esteja em aberto. Perguntas de negócio continuam sendo do Legacia; enquanto houver uma sem resposta, a parte afetada não entra na `main`.
+- Quem mescla: o **Claude Code** mescla a `codex/revisao-<tarefa>` na `claude/<tarefa>` depois de avaliar a revisão, e depois a `claude/<tarefa>` na `main`. O Codex não mescla na `main`.
+- Depois de cada mesclagem na `main`, o Claude Code conta ao Legacia, em linguagem simples, o que entrou e o que mudou para ele.
+- Nunca usar força (`--force`) na `main`, nunca apagar histórico e nunca mesclar algo com teste falhando para "resolver depois".
+- **Dois agentes nunca editam os mesmos arquivos ao mesmo tempo.** Enquanto o Codex revisa uma ramificação, o Claude Code não altera os mesmos arquivos; correções pequenas da revisão ficam na `codex/revisao-<tarefa>`; correções maiores são feitas pelo Claude Code depois que a revisão termina.
 - O revisor relata o que encontrou em linguagem simples no pull request. Mudança de regra de negócio nunca é feita na revisão: vira pergunta para o Legacia.
 - Mensagens de commit curtas, em português, dizendo o que mudou.
 - As tarefas do plano de 30 dias viram Issues no GitHub, com responsável e semana.

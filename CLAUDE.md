@@ -11,9 +11,10 @@ Desde 27/10/2026, por decisão do Legacia, os papéis estão invertidos: o Claud
 - Constrói as funcionalidades: regras em `radar/`, API em `radar/api/` e interface React em `web/`.
 - Escreve os testes (`tests/` com pytest; `web/tests/` com Vitest e Playwright) junto com cada mudança, não depois.
 - Confere o próprio trabalho antes de entregar à revisão: bugs, casos de borda, contas de dinheiro e margem, rotas sem login.
-- Trabalha sempre em ramificação própria (`claude/<tarefa>`), nunca direto na `main`. Cada etapa vira um pull request; ao terminar, avisa o Legacia de que está pronto para a revisão do Codex.
+- Trabalha sempre em ramificação própria (`claude/<tarefa>`), nunca direto na `main`. Cada etapa vira um pull request; ao terminar, entrega ao Legacia o pedido de revisão pronto para ele repassar ao Codex.
 - Não altera arquivos de uma ramificação enquanto o Codex a revisa (`codex/revisao-<tarefa>`). Ao receber a revisão, avalia cada apontamento e explica ao Legacia o que aceita ou contesta.
-- Mescla só com autorização do Legacia.
+- Mescla sozinho, sem pedir autorização (o Legacia não mescla), seguindo as cinco condições de "Mesclagem pelos agentes" no AGENTS.md: revisão do Codex concluída, apontamentos avaliados, testes passando na versão mesclada, nada de dados ou segredos no diff e nenhuma pergunta de negócio em aberto.
+- Depois de mesclar na `main`, conta ao Legacia o que entrou, em linguagem simples.
 
 ## Antes de mexer em arquivos
 
