@@ -15,14 +15,17 @@ export function quandoPerderSessao(funcao: (() => void) | null) {
   aoPerderSessao = funcao;
 }
 
-export async function pedir<T>(caminho: string, opcoes: { metodo?: string; corpo?: unknown } = {}): Promise<T> {
+export async function pedir<T>(caminho: string, opcoes: { metodo?: string; corpo?: unknown; arquivo?: Blob } = {}): Promise<T> {
+  // "arquivo" vai cru, como o próprio conteúdo do CSV; "corpo" vai como JSON.
+  const envio = opcoes.arquivo ?? (opcoes.corpo === undefined ? undefined : JSON.stringify(opcoes.corpo));
+  const tipo = opcoes.arquivo ? "text/csv" : "application/json";
   let resposta: Response;
   try {
     resposta = await fetch(`/api${caminho}`, {
-      method: opcoes.metodo ?? (opcoes.corpo === undefined ? "GET" : "POST"),
+      method: opcoes.metodo ?? (envio === undefined ? "GET" : "POST"),
       credentials: "same-origin",
-      headers: opcoes.corpo === undefined ? undefined : { "Content-Type": "application/json" },
-      body: opcoes.corpo === undefined ? undefined : JSON.stringify(opcoes.corpo),
+      headers: envio === undefined ? undefined : { "Content-Type": tipo },
+      body: envio,
     });
   } catch {
     throw new ErroApi(0, "Sem conexão com o servidor do Radar. Confira se ele está ligado.");

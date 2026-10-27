@@ -208,3 +208,4 @@ input, select, textarea { font: inherit; border: 1px solid var(--borda); border-
 .cabecalho-acoes { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
 .campo-com-botao { display: flex; gap: 0.4rem; }
 .campo-com-botao input { flex: 1; min-width: 0; }
+.codigo { background: var(--cinza-fundo); border-radius: var(--raio); padding: 0.6rem 0.8rem; overflow-x: auto; font-size: 0.85rem; }
