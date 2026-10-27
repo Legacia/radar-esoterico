@@ -37,3 +37,25 @@ jobs:
         run: |
           proibidos=$(git ls-files | grep -Ei '\.(db|sqlite3?|xlsx?|ods)$|(^|/)\.env$|^data/|^backups/|node_modules/|^web/dist/|\.csv$' | grep -v '^exemplos/' || true)
           if [ -n "$proibidos" ]; then echo "Arquivos que não podem estar no Git:"; echo "$proibidos"; exit 1; fi
+
+  interface:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Instalar dependências
+        run: npm ci
+      - name: Conferir tipos
+        run: npm run tipos
+      - name: Testes
+        run: npm test
+      - name: Montar
+        run: npm run build
