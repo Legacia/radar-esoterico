@@ -3,10 +3,11 @@ import { useEffect, useState, type JSX } from "react";
 import type { Usuario } from "../api";
 import { Aviso, Cabecalho } from "../componentes/basicos";
 import { PAGINAS, SECOES, enderecoDe, useRota } from "../rotas";
+import { Fornecedores } from "./Fornecedores";
 import { Painel } from "./Painel";
 
 // Telas já migradas; as demais mostram o aviso de construção.
-const TELAS: Record<string, () => JSX.Element> = { painel: Painel };
+const TELAS: Record<string, () => JSX.Element> = { painel: Painel, fornecedores: Fornecedores };
 
 export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => Promise<void> }) {
   const rota = useRota();

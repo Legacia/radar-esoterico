@@ -41,14 +41,14 @@ class Simulacao(BaseModel):
     custo: str
 
 
-def _texto(valor):
+def texto(valor):
     return None if valor is None else format(valor, "f")
 
 
 def _parametros(p):
-    return {"comissao_pct": _texto(p.comissao_pct), "tributo_pct": _texto(p.tributo_pct),
-            "margem_alvo_pct": _texto(p.margem_alvo_pct), "tarifa_fixa": _texto(p.tarifa_fixa),
-            "embalagem": _texto(p.embalagem), "outros": _texto(p.outros)}
+    return {"comissao_pct": texto(p.comissao_pct), "tributo_pct": texto(p.tributo_pct),
+            "margem_alvo_pct": texto(p.margem_alvo_pct), "tarifa_fixa": texto(p.tarifa_fixa),
+            "embalagem": texto(p.embalagem), "outros": texto(p.outros)}
 
 
 publico = APIRouter(prefix="/api")
@@ -86,7 +86,7 @@ def painel():
     total = obter_orcamento()["total_centavos"]
     dados["orcamento_total_centavos"] = total
     # Fração do orçamento já comprometida, em texto decimal; a tela só formata.
-    dados["comprometido_pct"] = _texto(Decimal(dados["comprometido_centavos"]) / total) if total else None
+    dados["comprometido_pct"] = texto(Decimal(dados["comprometido_centavos"]) / total) if total else None
     return dados
 
 
@@ -115,8 +115,12 @@ def simular(dados: Simulacao):
         minimo, aviso = preco_minimo(custo, p), None
     except ValueError as erro:
         minimo, aviso = None, str(erro)
-    return {"contribuicao": _texto(resultado.contribuicao), "margem_pct": _texto(resultado.margem_pct),
-            "preco_minimo": _texto(minimo), "aviso_preco_minimo": aviso}
+    return {"contribuicao": texto(resultado.contribuicao), "margem_pct": texto(resultado.margem_pct),
+            "preco_minimo": texto(minimo), "aviso_preco_minimo": aviso}
+
+
+# Rotas de cada tela, registradas no mesmo roteador protegido.
+from radar.api import fornecedores as _fornecedores  # noqa: E402,F401
 
 
 def criar_app():

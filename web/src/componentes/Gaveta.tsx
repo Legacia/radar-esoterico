@@ -4,8 +4,9 @@ import { useEffect, useRef, type ReactNode } from "react";
 
 const FOCAVEIS = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function Gaveta({ aberta, titulo, aoFechar, children }: {
+export function Gaveta({ aberta, titulo, aoFechar, larga, children }: {
   aberta: boolean;
+  larga?: boolean;
   titulo: string;
   aoFechar: () => void;
   children: ReactNode;
@@ -40,7 +41,7 @@ export function Gaveta({ aberta, titulo, aoFechar, children }: {
   if (!aberta) return null;
   return (
     <div className="gaveta-fundo" onClick={aoFechar}>
-      <div className="gaveta" role="dialog" aria-modal="true" aria-label={titulo} tabIndex={-1} ref={caixa}
+      <div className={`gaveta${larga ? " gaveta-larga" : ""}`} role="dialog" aria-modal="true" aria-label={titulo} tabIndex={-1} ref={caixa}
         onClick={(e) => e.stopPropagation()}>
         <header className="gaveta-topo">
           <h2>{titulo}</h2>

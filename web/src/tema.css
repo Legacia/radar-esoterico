@@ -178,3 +178,25 @@ input, select, textarea { font: inherit; border: 1px solid var(--borda); border-
   .grade-2 { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) { .grade-4 { grid-template-columns: 1fr; } }
+
+/* Gaveta larga, abas e formulários em duas colunas */
+.gaveta-larga { width: min(920px, 100%); }
+.abas-lista { display: flex; gap: 0.2rem; border-bottom: 1px solid var(--borda); margin-bottom: 1rem; flex-wrap: wrap; }
+.abas-lista [role="tab"] { font: inherit; background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 0.5rem 0.8rem; cursor: pointer; color: var(--texto-suave); }
+.abas-lista [role="tab"][aria-selected="true"] { color: var(--principal); border-bottom-color: var(--principal); font-weight: 600; }
+.campos-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+.grupo { border: 1px solid var(--borda-clara); border-radius: var(--raio); padding: 0.8rem 1rem; margin: 0; }
+.grupo legend { font-weight: 600; padding: 0 0.3rem; }
+.grupo .tarefa { margin-top: 0.4rem; }
+.fatos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.8rem; margin: 0.8rem 0 0; }
+.fatos dt { font-size: 0.8rem; color: var(--texto-suave); }
+.fatos dd { margin: 0.1rem 0 0; font-weight: 500; }
+.contadores { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.contador { display: flex; flex-direction: column; text-decoration: none; color: var(--texto); background: var(--painel);
+  border: 1px solid var(--borda); border-radius: 8px; padding: 0.5rem 0.8rem; min-width: 120px; }
+.contador[aria-current="true"] { border-color: var(--principal); box-shadow: inset 0 -3px 0 var(--principal); }
+.contador strong { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.contador span { font-size: 0.8rem; color: var(--texto-suave); }
+.lista-checklist { list-style: none; margin: 0 0 1rem; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+@media (max-width: 700px) { .campos-2, .fatos { grid-template-columns: 1fr; } }
