@@ -110,7 +110,7 @@ def test_senhas_erradas_nao_bloqueiam_o_login(cliente):
 def test_calculadora_caso_obrigatorio_da_margem(cliente):
     entrar(cliente)
     r = cliente.post("/api/calculadora/simular", json={"preco": "59,90", "custo": "20,00"}).json()
-    assert Decimal(r["contribuicao"]).quantize(Decimal("0.01")) == Decimal("14.33")
+    assert Decimal(r["contribuicao"]) == Decimal("14.33")
     assert Decimal(r["margem_pct"]).quantize(Decimal("0.001")) == Decimal("0.239")
     assert r["preco_minimo"] == "55.56"
     # Dinheiro sai como texto, nunca como número de ponto flutuante.
@@ -186,3 +186,54 @@ def test_alterar_tarefa_inexistente(cliente):
     resposta = cliente.put("/api/tarefas/999", json={"titulo": "T", "semana": 1, "responsavel": "Anna"})
     assert resposta.status_code == 400
     assert resposta.json()["detail"] == "Tarefa não encontrada."
+
+
+PADRAO = {"comissao": "20", "tributo": "6", "margem_alvo": "20", "tarifa_fixa": "4,50",
+          "embalagem": "2,50", "outros": "3,00", "limite_cotacao_dias": 15}
+
+
+def test_configuracao_traz_campos_para_a_tela(cliente):
+    entrar(cliente)
+    campos = cliente.get("/api/configuracao").json()["campos"]
+    assert campos == {"comissao": "20,00", "tributo": "6,00", "margem_alvo": "20,00",
+                      "tarifa_fixa": "4,50", "embalagem": "2,50", "outros": "3,00"}
+
+
+def test_salvar_parametros_muda_a_simulacao(cliente):
+    entrar(cliente)
+    r = cliente.put("/api/configuracao", json={**PADRAO, "comissao": "14,5", "margem_alvo": "25", "limite_cotacao_dias": 30})
+    assert r.status_code == 200
+    assert r.json()["parametros"]["comissao_pct"] == "0.145"
+    assert r.json()["parametros"]["margem_alvo_pct"] == "0.25"
+    assert r.json()["limite_cotacao_dias"] == 30
+    simulado = cliente.post("/api/calculadora/simular", json={"preco": "59,90", "custo": "20,00"}).json()
+    # 59,90 - 20 - 8,6855 - 4,50 - 2,50 - 3,594 - 3,00 = 17,6205, arredondado pela regra para 17,62
+    assert Decimal(simulado["contribuicao"]) == Decimal("17.62")
+
+
+def test_caso_da_margem_continua_com_os_padroes_salvos(cliente):
+    entrar(cliente)
+    assert cliente.put("/api/configuracao", json=PADRAO).status_code == 200
+    r = cliente.post("/api/calculadora/simular", json={"preco": "59,90", "custo": "20,00"}).json()
+    assert Decimal(r["contribuicao"]) == Decimal("14.33")
+    assert r["preco_minimo"] == "55.56"
+
+
+@pytest.mark.parametrize("campos, mensagem", [
+    ({"comissao": "abc"}, "Informe um número"),
+    ({"tarifa_fixa": "4,555"}, "duas casas"),
+    ({"comissao": "60", "tributo": "30", "margem_alvo": "20"}, ""),
+    ({"limite_cotacao_dias": 0}, "entre 1 e 3650"),
+    ({"limite_cotacao_dias": "15"}, "formato inválido"),
+])
+def test_parametros_invalidos_nao_salvam(cliente, campos, mensagem):
+    entrar(cliente)
+    antes = cliente.get("/api/configuracao").json()
+    r = cliente.put("/api/configuracao", json={**PADRAO, **campos})
+    if r.status_code == 200:
+        # Soma de 110% é aceita como parâmetro; a calculadora avisa que não existe preço mínimo.
+        aviso = cliente.post("/api/calculadora/simular", json={"preco": "59,90", "custo": "20"}).json()["aviso_preco_minimo"]
+        assert "menor que 100%" in aviso
+        return
+    assert r.status_code == 400 and mensagem in r.json()["detail"]
+    assert cliente.get("/api/configuracao").json() == antes
