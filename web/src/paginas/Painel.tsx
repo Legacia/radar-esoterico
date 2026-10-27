@@ -36,13 +36,13 @@ export function Painel() {
   const [dados, setDados] = useState<DadosPainel | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = useCallback(() => {
+  // Devolve a promessa para quem salvou poder esperar os dados novos chegarem.
+  const carregar = useCallback(() =>
     pedir<DadosPainel>("/painel").then(
       (d) => { setDados(d); setErro(null); },
       (e) => setErro(e instanceof ErroApi ? e.message : "Não foi possível carregar o painel."),
-    );
-  }, []);
-  useEffect(carregar, [carregar]);
+    ), []);
+  useEffect(() => { carregar(); }, [carregar]);
 
   if (erro) return <Aviso tipo="erro">{erro}</Aviso>;
   if (!dados) return <p className="legenda">Carregando o painel…</p>;
@@ -158,7 +158,7 @@ function Funil({ etapas }: { etapas: DadosPainel["funil"] }) {
   );
 }
 
-function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluidas: number; aoSalvar: () => void }) {
+function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluidas: number; aoSalvar: () => Promise<void> }) {
   const notificar = useNotificar();
   const [editando, setEditando] = useState<Tarefa | "nova" | null>(null);
   const [salvando, setSalvando] = useState<number | null>(null);
@@ -170,7 +170,8 @@ function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluida
     try {
       await pedir(`/tarefas/${t.id}`, { metodo: "PUT", corpo: { titulo: t.titulo, semana: t.semana, responsavel: t.responsavel, concluida: !t.concluida } });
       notificar(t.concluida ? "Tarefa reaberta." : "Tarefa concluída.");
-      aoSalvar();
+      // A trava só sai depois que a tela tem os dados novos, para a edição não partir de uma cópia velha.
+      await aoSalvar();
     } catch (e) {
       notificar(e instanceof ErroApi ? e.message : "Não foi possível salvar.", "erro");
     } finally {
@@ -180,7 +181,7 @@ function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluida
 
   return (
     <Caixa titulo="Plano de 30 dias"
-      acoes={<button type="button" className="botao" onClick={() => setEditando("nova")}>Cadastrar tarefa</button>}>
+      acoes={<button type="button" className="botao" onClick={() => setEditando("nova")} disabled={salvando !== null}>Cadastrar tarefa</button>}>
       <div className="progresso-rotulo">{concluidas} de {total} tarefas concluídas</div>
       <progress className="progresso" max={total || 1} value={concluidas} aria-label="Andamento do plano de 30 dias" />
       <div className="grade-4 semanas">
@@ -201,6 +202,7 @@ function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluida
                     <div className="tarefa-pe">
                       <span className="legenda-inline">{t.responsavel}</span>
                       <button type="button" className="botao-discreto link" onClick={() => setEditando(t)}
+                        disabled={salvando !== null}
                         aria-label={`Editar ${t.titulo}`}>Editar</button>
                     </div>
                   </li>

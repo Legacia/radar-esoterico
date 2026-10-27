@@ -134,6 +134,8 @@ describe("Painel", () => {
     });
     await userEvent.click(caixa);
     expect(caixa).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Editar Avaliar amostra fictícia" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cadastrar tarefa" })).toBeDisabled();
     await userEvent.click(caixa);
     liberar();
     await waitFor(() => expect(caixa).not.toBeDisabled());
