@@ -250,3 +250,11 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 - Nova tabela `configuracao`, com uma linha compartilhada: comissão, tributo e margem-alvo como frações em texto decimal; tarifa fixa, embalagem e outros em centavos inteiros; limite de cotação antiga em dias. Valores iniciais ficam em `radar/margem/padroes.toml`; edição pela tela, sem modificar fórmulas.
 - `radar/margem/` implementa fórmulas e configuração; `radar/fornecedores/regras.py` o checklist puro; `radar/fornecedores/__init__.py` as ações persistidas; `radar/produtos.py` catálogo e cotações; `radar/valores.py` validação e apresentação de valores/datas.
 - Novas telas protegidas: `app/fornecedores.py`, `app/catalogo.py`, `app/calculadora.py`. Componentes comuns de apresentação em `app/componentes.py`.
+
+## Estrutura e esquema implementados no Bloco 3
+
+- Migração 3 preserva as anteriores. Novas tabelas: `orcamento` (linha única, total e reserva em centavos) e `plano_compra` (uma linha por produto, cotação escolhida, quantidade, preço conservador e confirmações/justificativas de demanda e concorrência).
+- `produto` recebe `validado`, `justificativa_validacao` e `estoque_atual` por componente; validação é manual e exige justificativa, conforme decisão do Legacia nesta conversa. `interacao.situacao_resposta` opcional distingue aguardando/recebida; dados antigos ficam sem classificação.
+- `kit_item.sku_fornecedor_id` registra a cotação de custo do componente; `kit.quantidade_planejada` permite somar necessidades de componentes compartilhados sem baixa automática de estoque.
+- Novos módulos de negócio: `radar/mercado.py`, `radar/compras.py`, `radar/kits.py`, `radar/painel.py` e importador em `radar/importacao/`. Telas protegidas em `app/pesquisa.py`, `app/importar.py`, `app/compras.py`, `app/kits.py`; `app/painel.py` passa a mostrar os indicadores, tarefas e pendências.
+- Único CSV de exemplo: `exemplos/anuncios_ficticios.csv`, sem informação real. Formato e decisões confirmadas sobre critérios de compra, estoque e pendências estão documentados no README.
