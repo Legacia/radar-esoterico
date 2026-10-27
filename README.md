@@ -181,3 +181,19 @@ e margem; Anna para amostra. As sugestões não enviam mensagens a ninguém.
 
 O esquema 3 preserva os dados das versões anteriores. Os testes usam bancos temporários,
 inclusive para importar o CSV fictício duas vezes e exercitar critérios de compra e kits.
+
+## API (migração para React, etapa 1)
+
+A interface React ainda está em construção; enquanto isso o Streamlit continua sendo a forma de uso.
+A API já pode ser iniciada para testes:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m radar.servidor --endereco 127.0.0.1
+```
+
+- Rotas em `/api`. Só `POST /api/entrar` funciona sem sessão; todas as outras respondem 401 sem login.
+- Sessão em cookie `HttpOnly` e `SameSite=Strict`, guardada no servidor, com até 8 horas desde a entrada. Sair e reiniciar o servidor encerram a sessão.
+- Não há bloqueio por senhas erradas (decisão do Legacia); a proteção é a senha, guardada só como hash Argon2id.
+- Dinheiro sai como texto decimal (`"55.56"`) ou centavos inteiros; percentuais como fração em texto.
+- Rotas desta etapa: `entrar`, `sair`, `eu`, `painel`, `configuracao` e `calculadora/simular`. As demais entram junto com cada tela React.
