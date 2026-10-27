@@ -144,11 +144,18 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
       setFicha(f); setVersao((v) => v + 1); setErro(null);
     }, (e) => setErro(mensagemDeErro(e))), [id]);
   useEffect(() => { setFicha(null); carregar(); }, [carregar]);
-  // Ficha reaberta enquanto outra gravação corria: ao fim dela, busca de novo os dados salvos.
-  const primeira = useRef(gravacoes);
+  // Ficha aberta enquanto outra gravação corria: fica travada até ela acabar e, se deu certo,
+  // até buscar de novo os dados salvos. A ficha que gravou já recarrega dentro da própria gravação.
+  const abertaDuranteGravacao = useRef(ocupado);
+  const gravacoesNaAbertura = useRef(gravacoes);
+  const [atualizando, setAtualizando] = useState(ocupado);
   useEffect(() => {
-    if (gravacoes !== primeira.current) carregar();
-  }, [gravacoes, carregar]);
+    if (ocupado || !abertaDuranteGravacao.current) return;
+    abertaDuranteGravacao.current = false;
+    if (gravacoes === gravacoesNaAbertura.current) setAtualizando(false);
+    else carregar().finally(() => setAtualizando(false));
+  }, [ocupado, gravacoes, carregar]);
+  const bloqueado = ocupado || atualizando;
 
   // Grava, recarrega ficha e lista, e só então libera a trava.
   const gravar = (acao: () => Promise<unknown>, sucesso: string) => executar(async () => {
@@ -165,9 +172,9 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
         <div className="pilha">
           <Cabecalho ficha={ficha} />
           <Abas rotulo="Partes da ficha" abas={[
-            { titulo: "Checklist e etapa", conteudo: <Checklist key={versao} ficha={ficha} faltam={faltam} setFaltam={setFaltam} etapas={etapas} ocupado={ocupado} gravar={gravar} executar={executar} aoMudar={() => Promise.all([carregar(), aoMudar()]).then(() => {})} /> },
+            { titulo: "Checklist e etapa", conteudo: <Checklist key={versao} ficha={ficha} faltam={faltam} setFaltam={setFaltam} etapas={etapas} ocupado={bloqueado} gravar={gravar} executar={executar} aoMudar={() => Promise.all([carregar(), aoMudar()]).then(() => {})} /> },
             { titulo: "Condições e verificações", conteudo: (
-              <FormularioFornecedor key={versao} ficha={ficha} ocupado={ocupado}
+              <FormularioFornecedor key={versao} ficha={ficha} ocupado={bloqueado}
                 aoEnviar={(dados) => gravar(() => pedir(`/fornecedores/${id}`, { metodo: "PUT", corpo: dados }), "Fornecedor salvo.")} />
             ) },
             { titulo: `SKUs cotados (${ficha.skus.length})`, conteudo: (
@@ -177,7 +184,7 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
               </>
             ) },
             { titulo: `Contatos (${ficha.contatos.length})`, conteudo: (
-              <Contatos key={versao} ficha={ficha} ocupado={ocupado}
+              <Contatos key={versao} ficha={ficha} ocupado={bloqueado}
                 aoEnviar={(dados) => gravar(() => pedir(`/fornecedores/${id}/contatos`, { corpo: dados }), "Contato registrado.")} />
             ) },
           ]} />

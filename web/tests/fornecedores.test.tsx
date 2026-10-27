@@ -256,6 +256,20 @@ describe("Fornecedores", () => {
     expect(screen.queryByRole("dialog", { name: "Fornecedor fictício Alfa" })).toBeNull();
   });
 
+  it("a ficha que gravou não busca os dados de novo depois de liberar", async () => {
+    const chamadas = simular();
+    mostrar("#/fornecedores?ficha=1");
+    const ficha = await screen.findByRole("dialog", { name: "Fornecedor fictício Alfa" });
+    await userEvent.click(within(ficha).getByRole("tab", { name: "Condições e verificações" }));
+    await userEvent.click(within(ficha).getByRole("button", { name: "Salvar fornecedor" }));
+    await waitFor(() => expect(within(ficha).getByRole("button", { name: "Salvar fornecedor" })).not.toBeDisabled());
+    await userEvent.type(within(ficha).getByLabelText("Prazo"), " úteis");
+    await new Promise((r) => setTimeout(r, 50));
+    expect(within(ficha).getByLabelText("Prazo")).toHaveValue("7 dias úteis");
+    // Uma consulta ao abrir e uma dentro da gravação; nenhuma depois de liberar.
+    expect(chamadas.filter((c) => c.caminho === "/api/fornecedores/1" && c.metodo === "GET")).toHaveLength(2);
+  });
+
   it("abas trocam com as setas do teclado", async () => {
     simular();
     mostrar("#/fornecedores?ficha=1");
