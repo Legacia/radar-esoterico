@@ -194,6 +194,6 @@ A API já pode ser iniciada para testes:
 
 - Rotas em `/api`. Só `POST /api/entrar` funciona sem sessão; todas as outras respondem 401 sem login.
 - Sessão em cookie `HttpOnly` e `SameSite=Strict`, guardada no servidor, com até 8 horas desde a entrada. Sair e reiniciar o servidor encerram a sessão.
-- Cinco tentativas de senha erradas a partir do mesmo computador bloqueiam novas tentativas por 5 minutos.
+- Não há bloqueio por senhas erradas (decisão do Legacia); a proteção é a senha, guardada só como hash Argon2id.
 - Dinheiro sai como texto decimal (`"55.56"`) ou centavos inteiros; percentuais como fração em texto.
 - Rotas desta etapa: `entrar`, `sair`, `eu`, `painel`, `configuracao` e `calculadora/simular`. As demais entram junto com cada tela React.

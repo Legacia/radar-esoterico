@@ -207,6 +207,7 @@ Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Lega
   - Contas são criadas pelo Legacia, por um comando de linha no servidor (por exemplo `python -m radar.usuarios criar`). Não existe tela de cadastro aberto.
   - A senha é guardada **somente como hash** (bcrypt ou argon2), na tabela `usuario`. Nunca em texto, nunca no código, nunca no Git.
   - Senha esquecida: o Legacia redefine pelo mesmo comando no servidor. Sem recuperação por e-mail.
+  - Sem bloqueio por tentativas de senha erradas (decisão do Legacia em 27/10/2026).
   - A sessão dura no máximo **8 horas** desde a entrada, sem prorrogação por atividade (aprovado pelo Legacia em 26/10/2026). O valor fica em `radar/sessoes.py`.
   - "Simples" significa sem perfis e sem permissões diferentes: quem tem conta vê tudo. Mas o login é de verdade: sessão por usuário em **cookie `HttpOnly` e `SameSite=Strict`**, com o identificador da sessão aleatório e guardado no servidor. **Toda rota da API**, exceto entrar, verifica a sessão antes de devolver qualquer dado; a interface só esconde telas, quem protege os dados é a API. Sair e expirar invalidam a sessão no servidor.
   - Limite conhecido: na rede local a conexão é HTTP, sem criptografia. Aceitável em rede doméstica protegida; reavaliar se a rede deixar de ser só de vocês.
