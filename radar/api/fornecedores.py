@@ -66,7 +66,7 @@ def _resumo(f):
     return {chave: f[chave] for chave in ("id", "nome", "status", "prazo", "condicao_pagamento", "data_ultima_cotacao")}
 
 
-def _data(valor):
+def data_do_texto(valor):
     try:
         return date.fromisoformat(valor)
     except (TypeError, ValueError):
@@ -127,5 +127,5 @@ def promocao(fornecedor_id: int):
 
 @protegido.post("/fornecedores/{fornecedor_id}/contatos")
 def contato(fornecedor_id: int, dados: Contato):
-    return {"id": registrar_interacao(fornecedor_id, _data(dados.data), dados.canal, dados.resumo,
+    return {"id": registrar_interacao(fornecedor_id, data_do_texto(dados.data), dados.canal, dados.resumo,
                                       situacao_resposta=dados.situacao_resposta)}

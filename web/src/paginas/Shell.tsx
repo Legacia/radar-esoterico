@@ -5,9 +5,10 @@ import { Aviso, Cabecalho } from "../componentes/basicos";
 import { PAGINAS, SECOES, enderecoDe, useRota } from "../rotas";
 import { Fornecedores } from "./Fornecedores";
 import { Painel } from "./Painel";
+import { Produtos } from "./Produtos";
 
 // Telas já migradas; as demais mostram o aviso de construção.
-const TELAS: Record<string, () => JSX.Element> = { painel: Painel, fornecedores: Fornecedores };
+const TELAS: Record<string, () => JSX.Element> = { painel: Painel, fornecedores: Fornecedores, produtos: Produtos };
 
 export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => Promise<void> }) {
   const rota = useRota();

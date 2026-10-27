@@ -120,7 +120,7 @@ def simular(dados: Simulacao):
 
 
 # Rotas de cada tela, registradas no mesmo roteador protegido.
-from radar.api import fornecedores as _fornecedores  # noqa: E402,F401
+from radar.api import fornecedores as _fornecedores, produtos as _produtos  # noqa: E402,F401
 
 
 def criar_app():
