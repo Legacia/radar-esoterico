@@ -12,10 +12,11 @@ def validar_etapa(etapa, motivo=""):
         raise ValueError("Informe o motivo para descartar ou pausar.")
 
 
-def checklist_promocao(fornecedor, margens_por_sku, alvo):
+def checklist_promocao(fornecedor, margens_por_produto, alvo):
     # Piso de 20% aprovado pelo usuário; o alvo maior prevalece.
+    # Três produtos distintos, não três códigos (decisão do Legacia em 26/10/2026).
     minimo = max(Decimal("0.20"), alvo)
-    qualificados = sum(1 for margem in margens_por_sku.values()
+    qualificados = sum(1 for margem in margens_por_produto.values()
                        if margem is not None and margem > 0 and margem >= minimo)
     return {
         "Fornecedor ativo": fornecedor["status"] != "Descartado ou pausado",
@@ -24,6 +25,6 @@ def checklist_promocao(fornecedor, margens_por_sku, alvo):
             and fornecedor["prazo"] and fornecedor["condicao_pagamento"]),
         "Emite nota fiscal": bool(fornecedor["emite_nota"]),
         "Amostra avaliada pela Anna (especificações, procedência e qualidade)": bool(fornecedor["amostra_avaliada"]),
-        "Margem no alvo em pelo menos três SKUs distintos": qualificados >= 3,
+        "Margem no alvo em pelo menos três produtos distintos": qualificados >= 3,
         "Reposição confirmada": bool(fornecedor["reposicao_confirmada"]),
     }
