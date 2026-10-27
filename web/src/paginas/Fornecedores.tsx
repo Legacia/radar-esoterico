@@ -110,7 +110,8 @@ export function Fornecedores() {
       </Gaveta>
 
       {fichaId !== null && (
-        <FichaFornecedor id={fichaId} etapas={etapas} executar={gravacao.executar} ocupado={gravacao.ocupado}
+        // A chave recria a ficha ao trocar de fornecedor: nada da ficha anterior é reaproveitado.
+        <FichaFornecedor key={fichaId} id={fichaId} etapas={etapas} executar={gravacao.executar} ocupado={gravacao.ocupado}
           gravacoes={gravacao.concluidas}
           aoMudar={carregar} aoFechar={() => ir({ ficha: "" })} />
       )}
@@ -137,7 +138,11 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
   // Pendências da última tentativa de promoção: ficam aqui fora para sobreviver à recarga da ficha.
   const [faltam, setFaltam] = useState<string[] | null>(null);
   const carregar = useCallback(() => pedir<Ficha>(`/fornecedores/${id}`).then(
-    (f) => { setFicha(f); setVersao((v) => v + 1); setErro(null); }, (e) => setErro(mensagemDeErro(e))), [id]);
+    (f) => {
+      // Resposta atrasada de outro fornecedor nunca entra nesta ficha (e nunca seria salva nela).
+      if (f.id !== id) return;
+      setFicha(f); setVersao((v) => v + 1); setErro(null);
+    }, (e) => setErro(mensagemDeErro(e))), [id]);
   useEffect(() => { setFicha(null); carregar(); }, [carregar]);
   // Ficha reaberta enquanto outra gravação corria: ao fim dela, busca de novo os dados salvos.
   const primeira = useRef(gravacoes);

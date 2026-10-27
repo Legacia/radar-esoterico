@@ -234,6 +234,28 @@ describe("Fornecedores", () => {
     expect(within(ficha).getByLabelText("CNPJ")).toHaveValue("");
   });
 
+  it("resposta atrasada de outro fornecedor não entra na ficha aberta", async () => {
+    const BETA = { ...FICHA, ...LISTA.fornecedores[1], cnpj: "", contato: "" };
+    let liberarAlfa!: () => void;
+    const chamadas: { caminho: string; metodo: string }[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (entrada, init) => {
+      const caminho = String(entrada);
+      chamadas.push({ caminho, metodo: init?.method ?? "GET" });
+      if (caminho === "/api/fornecedores/1") await new Promise<void>((r) => { liberarAlfa = r; });
+      const corpo = caminho === "/api/fornecedores" ? LISTA : caminho === "/api/fornecedores/1" ? FICHA
+        : caminho === "/api/fornecedores/2" ? BETA : { id: 2 };
+      return new Response(JSON.stringify(corpo), { status: 200 });
+    });
+    mostrar("#/fornecedores?ficha=1");
+    await waitFor(() => expect(chamadas.some((c) => c.caminho === "/api/fornecedores/1")).toBe(true));
+    window.location.hash = "#/fornecedores?ficha=2";
+    const ficha = await screen.findByRole("dialog", { name: "Fornecedor fictício Beta" });
+    liberarAlfa();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.getByRole("dialog", { name: "Fornecedor fictício Beta" })).toBe(ficha);
+    expect(screen.queryByRole("dialog", { name: "Fornecedor fictício Alfa" })).toBeNull();
+  });
+
   it("abas trocam com as setas do teclado", async () => {
     simular();
     mostrar("#/fornecedores?ficha=1");
