@@ -2,7 +2,7 @@
 
 Ferramenta local de inteligência comercial para a **Tenda da Bruxa 2.0**: venda de produtos esotéricos em marketplaces (Mercado Livre, Shopee etc.), com estoque próprio, como renda extra.
 
-Este arquivo é a fonte única de regras do projeto. Vale para o Codex, para o Claude Code e para qualquer pessoa que mexa no código. Em caso de dúvida entre este arquivo e uma instrução solta, siga este arquivo e avise o responsável.
+Este arquivo é a fonte única de regras do projeto. Vale para o Claude Code e para qualquer pessoa que mexa no código. Em caso de dúvida entre este arquivo e uma instrução solta, siga este arquivo e avise o responsável.
 
 ## Quem decide o quê
 
@@ -31,7 +31,7 @@ Dentro:
 - **Calculadora de margem**
 - **Decisão de compra** (checklist de critérios)
 - **Painel** inicial
-- **Acesso pela rede local** (configuração do Streamlit para aceitar outros computadores, SQLite em modo WAL, instruções de uso)
+- **Acesso pela rede local** (servidor que aceita outros computadores da rede, SQLite em modo WAL, instruções de uso)
 - **Login simples** com e-mail e senha, obrigatório antes de abrir qualquer tela (ver "Acesso pela rede")
 - Testes automatizados
 
@@ -44,33 +44,38 @@ Fora (não implementar sem pedido explícito):
 ## Stack
 
 - Python, aplicação única com módulos bem separados
-- Interface: Streamlit
+- Interface: **React + TypeScript**, montada com **Vite** (decisão do Legacia em 27/10/2026, substituindo o Streamlit antes do início do uso real)
+- API: **FastAPI** em Python, servida por Uvicorn. A mesma aplicação entrega a API (`/api/...`) e os arquivos já montados da interface, numa porta só
 - Coleta e tratamento: `requests` + `pandas`
 - Banco: SQLite (arquivo único em `data/`, com modo WAL ligado)
-- Gráficos: Plotly
-- Execução: local, pelo navegador. **O acesso por outros computadores da mesma rede entra na primeira versão** (decisão do Legacia): o Radar roda num computador "servidor" e os outros abrem o endereço dele no navegador (algo como `http://192.168.0.10:8501`). Continua sem nuvem. Detalhes na seção "Acesso pela rede".
+- Gráficos: SVG desenhado nos próprios componentes React, sem biblioteca de gráficos, cada um com tabela alternativa (padrão da referência visual)
+- Execução: local, pelo navegador. **O acesso por outros computadores da mesma rede entra na primeira versão** (decisão do Legacia): o Radar roda num computador "servidor" e os outros abrem o endereço dele no navegador (algo como `http://192.168.0.10:8501`; a porta 8501 foi mantida). Continua sem nuvem. Detalhes na seção "Acesso pela rede".
 - Agendamento: agendador do sistema operacional, só depois
 
 ## Estrutura de pastas
 
-A pasta raiz do projeto, no computador do Legacia, é `E:\Projetos\RadarEsoterico` (repositório `radar-esoterico` no GitHub). A divisão interna abaixo é a proposta vigente; o arquivo principal da interface é `app/main.py`. Mudanças na estrutura devem ser registradas aqui.
+A pasta raiz do projeto, no computador do Legacia, é `E:\Projetos\RadarEsoterico` (repositório `radar-esoterico` no GitHub). A divisão interna abaixo é a proposta vigente; a entrada da API é `radar/api/` e a da interface é `web/src/main.tsx`. Mudanças na estrutura devem ser registradas aqui.
 
 ```
-.streamlit/     config.toml (configuração do servidor, vai para o Git); secrets.toml fica fora
-app/            interface Streamlit (uma página por tela)
+web/            interface React + TypeScript (Vite); uma página por tela em web/src/paginas/
+  dist/         interface montada para uso (gerada pelo build, fora do Git)
 radar/          regras de negócio, sem código de interface
+  api/          FastAPI: rotas finas que só chamam as regras, login e sessão por cookie
   banco/        conexão, criação de tabelas, consultas
   margem/       calculadora e parâmetros
   fornecedores/ ciclo de vida e checklist de promoção
   importacao/   leitura de CSV
   conectores/   fontes de dados (desacoplados, nada trava se faltarem)
-tests/          testes automatizados
+tests/          testes automatizados (pytest: regras e API)
+web/tests/      testes da interface (Vitest para componentes; Playwright para o fluxo no navegador)
 exemplos/       CSVs de exemplo, sem dados reais
 data/           banco real (fora do Git)
 backups/        backups (fora do Git)
 ```
 
-Regra: a lógica de negócio fica em `radar/`. As páginas em `app/` só chamam essas funções. Isso permite testar a margem e o ciclo do fornecedor sem abrir a interface.
+Regra: a lógica de negócio fica em `radar/`. A API em `radar/api/` só recebe, valida o formato e chama essas funções; a interface em `web/` só chama a API. **Nenhuma conta de dinheiro, margem, critério de compra ou promoção é refeita no React**: a tela mostra o que a API devolveu. Isso permite testar tudo sem abrir a interface e evita duas versões da mesma regra.
+
+Dinheiro entre API e interface trafega como **texto decimal** (`"59.90"`) ou centavos inteiros, nunca como número de ponto flutuante do JavaScript. A formatação `R$ 1.234,56` é feita na tela.
 
 ## Telas
 
@@ -194,7 +199,7 @@ Não comprar só porque o fornecedor oferece desconto: antes, descobrir se o pre
 Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Legacia e Anna), em casa, na mesma rede.
 
 - Um computador é o **servidor**: roda o Radar e guarda o arquivo do banco. Os outros só abrem o endereço no navegador. O servidor precisa estar ligado, com o Radar aberto.
-- Configuração do Streamlit em `.streamlit/config.toml` (versionado, sem segredos): aceitar conexões da rede (`server.address = "0.0.0.0"`) e porta fixa (padrão 8501). Documentar no README como descobrir o endereço do servidor.
+- O servidor (Uvicorn) aceita conexões da rede (`0.0.0.0`) na porta fixa 8501, configurável sem segredos. Documentar no README como descobrir o endereço do servidor. No uso normal não roda servidor de desenvolvimento do Vite: a interface montada (`web/dist`) é servida pela própria API.
 - O Windows pede liberação no firewall na primeira execução. Liberar **somente para rede privada**, nunca para rede pública.
 - SQLite com modo **WAL** ligado e `busy_timeout` configurado, para duas pessoas usarem ao mesmo tempo sem erro de "banco travado". Gravações devem ser curtas.
 - O banco **nunca** é copiado para os outros computadores: existe um só, no servidor.
@@ -203,7 +208,7 @@ Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Lega
   - A senha é guardada **somente como hash** (bcrypt ou argon2), na tabela `usuario`. Nunca em texto, nunca no código, nunca no Git.
   - Senha esquecida: o Legacia redefine pelo mesmo comando no servidor. Sem recuperação por e-mail.
   - A sessão dura no máximo **8 horas** desde a entrada, sem prorrogação por atividade (aprovado pelo Legacia em 26/10/2026). O valor fica em `radar/sessoes.py`.
-  - "Simples" significa sem perfis e sem permissões diferentes: quem tem conta vê tudo. Mas o login é de verdade: sessão por usuário (`st.session_state`) e todas as páginas verificam se há sessão ativa antes de mostrar qualquer dado.
+  - "Simples" significa sem perfis e sem permissões diferentes: quem tem conta vê tudo. Mas o login é de verdade: sessão por usuário em **cookie `HttpOnly` e `SameSite=Strict`**, com o identificador da sessão aleatório e guardado no servidor. **Toda rota da API**, exceto entrar, verifica a sessão antes de devolver qualquer dado; a interface só esconde telas, quem protege os dados é a API. Sair e expirar invalidam a sessão no servidor.
   - Limite conhecido: na rede local a conexão é HTTP, sem criptografia. Aceitável em rede doméstica protegida; reavaliar se a rede deixar de ser só de vocês.
   - Nenhum agente de IA cria contas reais nem escolhe senhas. Para testes, usar contas fictícias criadas só no banco de teste.
 - O endereço do Radar não deve ser exposto à internet (nada de redirecionamento de porta no roteador). O login protege contra quem está na mesma rede, não contra a internet aberta.
@@ -212,9 +217,9 @@ Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Lega
 ## Como trabalhar com Git
 
 - `main` guarda só código revisado e funcionando. Nada de commit direto na `main`.
-- Uma ramificação por tarefa: `codex/<tarefa>` para trabalho do Codex, `claude/<tarefa>` para trabalho do Claude Code.
+- Uma ramificação por tarefa: `claude/<tarefa>`. As ramificações `codex/...` antigas são só histórico.
 - Tudo entra por pull request, revisado por uma pessoa.
-- **Dois agentes nunca editam os mesmos arquivos ao mesmo tempo.** Divisão sugerida: o Codex constrói módulos; o Claude Code revisa (bugs, testes, qualidade dos dados, erros financeiros) e escreve testes.
+- **Decisão do Legacia em 27/10/2026: o projeto segue só com o Claude Code, sem o Codex.** O Claude Code constrói, testa e revisa o próprio trabalho; a revisão final de cada pull request é do Legacia. Se no futuro outro agente voltar, dois agentes nunca editam os mesmos arquivos ao mesmo tempo.
 - Mensagens de commit curtas, em português, dizendo o que mudou.
 - As tarefas do plano de 30 dias viram Issues no GitHub, com responsável e semana.
 
@@ -224,9 +229,13 @@ Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Lega
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-streamlit run app/main.py
+cd web; npm install; npm run build; cd ..
+python -m radar.servidor          # sobe API + interface em http://localhost:8501
 pytest
+cd web; npm test                  # testes da interface
 ```
+
+Desenvolvimento da interface: `npm run dev` dentro de `web/` (Vite com recarga automática, apontando para a API local). Node.js LTS é necessário só para montar e testar a interface; quem apenas usa o Radar no outro computador precisa só do navegador.
 
 No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 
@@ -261,8 +270,24 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 
 ## Interface (revisão visual de 27/10/2026)
 
-- Decisão do Legacia: manter o Streamlit e aplicar o padrão visual do projeto de referência (ERT Engagement Monitor), em vez de trocar para React. Textos da interface continuam em português do Brasil.
-- Tema em `.streamlit/config.toml`: fundo `#f3f5f8`, painéis brancos, barra lateral escura `#19222e`, cor principal `#24406f`, fonte IBM Plex Sans (com Segoe UI de reserva, se não houver internet) e cores de selo (verde cumprido, laranja pendente, vermelho crítico, amarelo atenção, cinza neutro).
-- `app/componentes.py` concentra o estilo extra (`aplicar_estilo`), o cabeçalho de página e os selos (`selo`, `selos_criterios`). `app/navegacao.py` guarda as páginas registradas em `app/main.py`, para links entre telas (`link`).
+- Primeira decisão (manhã de 27/10/2026): manter o Streamlit com o visual da referência. **Substituída no mesmo dia**: o Legacia decidiu migrar para React antes do início do uso real. O visual abaixo continua sendo o padrão e passa a ser aplicado no React.
+- Referência: projeto ERT Engagement Monitor (shell com barra lateral escura, painéis, selos, gavetas laterais para detalhes, tabelas ordenáveis, gráficos clicáveis com tabela alternativa, filtros no endereço `#/pagina?filtro=valor`). Textos da interface em português do Brasil.
+- Tokens de cor (em CSS no React): fundo `#f3f5f8`, painéis brancos, barra lateral escura `#19222e`, cor principal `#24406f`, fonte IBM Plex Sans (com Segoe UI de reserva, se não houver internet) e cores de selo (verde cumprido, laranja pendente, vermelho crítico, amarelo atenção, cinza neutro).
+- Na versão Streamlit, `app/componentes.py` e `app/navegacao.py` implementaram esse padrão; servem de referência até a interface React substituir a pasta `app/`.
+- Sem biblioteca de componentes visuais pronta (estilo próprio, como na referência). Acessibilidade: foco visível pelo teclado, Esc fecha gavetas, gráficos com `aria-label` e tabela alternativa.
 - Navegação agrupada em seções: Visão geral, Fornecimento, Mercado e Decisão.
 - Pesquisa de oportunidades é **simulação livre** (decisão do Legacia em 27/10/2026): usa a margem-alvo configurada, mesmo abaixo de 20%. Promoção de fornecedor, decisão de compra e pendências do Painel continuam exigindo o piso de 20%.
+
+## Migração para React (decisão de 27/10/2026)
+
+O Legacia decidiu migrar a interface para React antes de começar o uso real, e seguir o projeto só com o Claude Code. Regras da migração:
+
+- **As regras de negócio em `radar/` não mudam** e seus testes continuam valendo. A migração troca só a interface e acrescenta a API.
+- Ordem de trabalho, cada etapa em ramificação e pull request próprios:
+  1. API FastAPI com login, sessão por cookie e todas as rotas protegidas, com testes em pytest (inclusive o teste que confere que toda rota exige sessão).
+  2. Esqueleto React: shell, tema, login, navegação e componentes comuns (painel, selo, tabela, gaveta, aviso, notificação).
+  3. Telas, uma por vez: Painel, Fornecedores, Produtos e SKUs, Calculadora, Pesquisa, Importar, Kits, Decisão de compra.
+  4. Teste de ponta a ponta no navegador (Playwright) do fluxo principal e do caso da margem (R$ 14,33 e 23,9%).
+  5. Retirar a pasta `app/` e o Streamlit só depois que todas as telas React estiverem aprovadas.
+- Enquanto a migração não termina, a versão Streamlit da `main` continua funcionando. O banco é o mesmo; a API não muda o esquema sem nova migração.
+- Novas dependências entram fixadas por versão (`requirements.txt` e `package-lock.json`).

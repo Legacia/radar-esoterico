@@ -6,21 +6,25 @@ As regras do projeto estão no `AGENTS.md`, importado acima. Aqui ficam só os p
 
 ## Papel padrão
 
-Salvo pedido em contrário, o Claude Code atua como **revisor e autor de testes**:
+Desde 27/10/2026, por decisão do Legacia, o Claude Code é o **único agente do projeto** (o Codex saiu). Ele:
 
-- Revisar o que o Codex construiu: bugs, casos de borda, erros em contas de dinheiro e margem, qualidade dos dados.
-- Escrever e manter os testes em `tests/`.
-- Corrigir problemas encontrados, em ramificação própria (`claude/<tarefa>`), nunca direto na `main`.
+- Constrói as funcionalidades: regras em `radar/`, API em `radar/api/` e interface React em `web/`.
+- Escreve e mantém os testes (`tests/` com pytest; `web/tests/` com Vitest e Playwright) junto com cada mudança, não depois.
+- Revisa o próprio trabalho antes de pedir revisão: bugs, casos de borda, erros em contas de dinheiro e margem, qualidade dos dados, rotas sem login.
+- Trabalha sempre em ramificação própria (`claude/<tarefa>`), nunca direto na `main`. Cada etapa vira um pull request para o Legacia revisar; mesclar só com autorização dele.
 
 ## Antes de mexer em arquivos
 
 1. Rodar `git status` e `git branch` para saber em que ramificação está e se há alterações pendentes.
-2. Se outra ramificação (`codex/...`) estiver alterando os mesmos arquivos, parar e avisar o Legacia em vez de editar.
+2. Partir de uma `main` atualizada e criar a ramificação da tarefa.
 3. Em caso de dúvida sobre uma regra de negócio, perguntar em vez de supor. Fornecedor, compra e investimento são decisões humanas.
 
 ## Cuidados
 
-- Nunca usar `float` para dinheiro.
-- Conferir o caso de teste da margem (R$ 14,33 e 23,9%) sempre que mexer na calculadora.
-- Se `git status` mostrar banco, CSV, planilha ou arquivo `.env`, não fazer commit e avisar.
+- Nunca usar `float` para dinheiro, nem em Python nem no TypeScript (no React, dinheiro chega da API como texto decimal ou centavos inteiros).
+- Não reimplementar no React nenhuma regra de margem, compra ou promoção: a tela mostra o que a API calculou.
+- Conferir o caso de teste da margem (R$ 14,33 e 23,9%) sempre que mexer na calculadora, na API ou na tela correspondente.
+- Toda rota nova da API exige sessão; o teste que percorre as rotas deve continuar passando.
+- Se `git status` mostrar banco, CSV, planilha, arquivo `.env`, `node_modules/` ou `web/dist/`, não fazer commit e avisar.
+- Antes de dizer que uma tela está pronta, abrir no navegador com dados fictícios em banco temporário e conferir; nunca usar o banco real `data/radar.db` para testes.
 - Explicar o que fez em linguagem simples. O Legacia não é programador.
