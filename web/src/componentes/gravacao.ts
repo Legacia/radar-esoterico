@@ -8,6 +8,8 @@ export type Executar = <T>(acao: () => Promise<T>) => Promise<T | undefined>;
 
 export function useGravacao() {
   const [ocupado, setOcupado] = useState(false);
+  // Conta as gravações terminadas: quem abriu dados durante uma gravação recarrega quando ela acaba.
+  const [concluidas, setConcluidas] = useState(0);
   const trava = useRef(false);
 
   const executar: Executar = useCallback(async (acao) => {
@@ -19,10 +21,11 @@ export function useGravacao() {
     } finally {
       trava.current = false;
       setOcupado(false);
+      setConcluidas((n) => n + 1);
     }
   }, []);
 
-  return { ocupado, executar };
+  return { ocupado, executar, concluidas };
 }
 
 export function mensagemDeErro(erro: unknown): string {

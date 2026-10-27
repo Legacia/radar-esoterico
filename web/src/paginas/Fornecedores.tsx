@@ -1,6 +1,6 @@
 // Fornecedores: lista por etapa, ficha com checklist, condições, cotações e contatos.
 // Checklist, margens e promoção vêm da API; a tela nunca decide sozinha.
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { pedir } from "../api";
 import { Abas } from "../componentes/Abas";
 import { Aviso, Painel as Caixa, Selo, type Tom } from "../componentes/basicos";
@@ -111,14 +111,16 @@ export function Fornecedores() {
 
       {fichaId !== null && (
         <FichaFornecedor id={fichaId} etapas={etapas} executar={gravacao.executar} ocupado={gravacao.ocupado}
+          gravacoes={gravacao.concluidas}
           aoMudar={carregar} aoFechar={() => ir({ ficha: "" })} />
       )}
     </>
   );
 }
 
-function FichaFornecedor({ id, etapas, executar, ocupado, aoMudar, aoFechar }: {
+function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, aoFechar }: {
   id: number;
+  gravacoes: number;
   etapas: string[];
   executar: Executar;
   ocupado: boolean;
@@ -137,6 +139,11 @@ function FichaFornecedor({ id, etapas, executar, ocupado, aoMudar, aoFechar }: {
   const carregar = useCallback(() => pedir<Ficha>(`/fornecedores/${id}`).then(
     (f) => { setFicha(f); setVersao((v) => v + 1); setErro(null); }, (e) => setErro(mensagemDeErro(e))), [id]);
   useEffect(() => { setFicha(null); carregar(); }, [carregar]);
+  // Ficha reaberta enquanto outra gravação corria: ao fim dela, busca de novo os dados salvos.
+  const primeira = useRef(gravacoes);
+  useEffect(() => {
+    if (gravacoes !== primeira.current) carregar();
+  }, [gravacoes, carregar]);
 
   // Grava, recarrega ficha e lista, e só então libera a trava.
   const gravar = (acao: () => Promise<unknown>, sucesso: string) => executar(async () => {

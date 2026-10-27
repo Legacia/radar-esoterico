@@ -189,6 +189,32 @@ describe("Fornecedores", () => {
     await waitFor(() => expect(within(ficha).getByLabelText("Emite nota fiscal")).toBeChecked());
   });
 
+  it("ficha fechada e reaberta durante a gravação recarrega quando ela termina", async () => {
+    simular();
+    mostrar("#/fornecedores?ficha=1");
+    let ficha = await screen.findByRole("dialog", { name: "Fornecedor fictício Alfa" });
+    await userEvent.click(within(ficha).getByRole("tab", { name: "Condições e verificações" }));
+    await userEvent.click(within(ficha).getByLabelText("Emite nota fiscal"));
+    let liberar!: () => void;
+    let salvo = false;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (entrada, init) => {
+      const caminho = String(entrada);
+      if (init?.method === "PUT") { await new Promise<void>((r) => { liberar = r; }); salvo = true; }
+      const corpo = caminho === "/api/fornecedores" && init?.method === "GET" ? LISTA
+        : caminho === "/api/fornecedores/1" && init?.method === "GET" ? { ...FICHA, emite_nota: salvo ? 1 : 0 } : { id: 1 };
+      return new Response(JSON.stringify(corpo), { status: 200 });
+    });
+    await userEvent.click(within(ficha).getByRole("button", { name: "Salvar fornecedor" }));
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    window.location.hash = "#/fornecedores?ficha=1";
+    ficha = await screen.findByRole("dialog", { name: "Fornecedor fictício Alfa" });
+    await userEvent.click(await within(ficha).findByRole("tab", { name: "Condições e verificações" }));
+    expect(within(ficha).getByLabelText("Emite nota fiscal")).not.toBeChecked();
+    liberar();
+    await waitFor(() => expect(within(ficha).getByLabelText("Emite nota fiscal")).toBeChecked());
+  });
+
   it("abas trocam com as setas do teclado", async () => {
     simular();
     mostrar("#/fornecedores?ficha=1");
