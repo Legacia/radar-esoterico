@@ -41,6 +41,7 @@ def dinheiro_texto(texto):
 
 
 def reais(valor):
+    valor = valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     return "R$ " + f"{valor:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
 
 
