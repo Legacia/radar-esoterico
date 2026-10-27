@@ -77,6 +77,25 @@ describe("entrada e sessão", () => {
     expect(chamadas.some((c) => c.caminho === "/api/sair" && c.init?.method === "POST")).toBe(true);
   });
 
+  it("sem conexão ao sair, avisa e mantém a pessoa dentro", async () => {
+    simularApi({ "/api/eu": [ANNA] });
+    render(<App />);
+    const sairBotao = await screen.findByRole("button", { name: "Sair" });
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
+    await userEvent.click(sairBotao);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível sair");
+    expect(screen.getByRole("navigation", { name: "Telas" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Entrar" })).toBeNull();
+  });
+
+  it("erro do servidor ao sair também não finge que saiu", async () => {
+    simularApi({ "/api/eu": [ANNA], "/api/sair": [{ status: 500, corpo: { detail: "Falha interna." } }] });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: "Sair" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("a sessão continua aberta");
+    expect(screen.queryByRole("button", { name: "Entrar" })).toBeNull();
+  });
+
   it("servidor desligado mostra mensagem clara", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
     render(<App />);

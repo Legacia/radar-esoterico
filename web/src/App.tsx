@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { quandoPerderSessao, quemSou, sair, type Usuario } from "./api";
+import { ErroApi, quandoPerderSessao, quemSou, sair, type Usuario } from "./api";
 import { ProvedorNotificacoes } from "./componentes/Notificacoes";
 import { Entrada } from "./paginas/Entrada";
 import { Shell } from "./paginas/Shell";
@@ -20,8 +20,13 @@ export function App() {
   }, []);
 
   const aoSair = useCallback(async () => {
-    // Mesmo se a sessão já tiver vencido ou o servidor cair, a tela volta para a entrada.
-    await sair().catch(() => {});
+    // Só volta à entrada se o servidor confirmou a saída ou se a sessão já não valia (401).
+    // Sem conexão, a sessão continua viva no servidor: o erro sobe para a tela avisar.
+    try {
+      await sair();
+    } catch (erro) {
+      if (!(erro instanceof ErroApi && erro.status === 401)) throw erro;
+    }
     setEstado({ tipo: "fora" });
   }, []);
 

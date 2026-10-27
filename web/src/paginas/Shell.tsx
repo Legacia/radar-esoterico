@@ -4,9 +4,20 @@ import type { Usuario } from "../api";
 import { Aviso, Cabecalho } from "../componentes/basicos";
 import { PAGINAS, SECOES, enderecoDe, useRota } from "../rotas";
 
-export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => void }) {
+export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => Promise<void> }) {
   const rota = useRota();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [erroSaida, setErroSaida] = useState<string | null>(null);
+
+  async function tentarSair() {
+    setErroSaida(null);
+    try {
+      await aoSair();
+    } catch (erro) {
+      const motivo = erro instanceof Error ? erro.message : "";
+      setErroSaida(`Não foi possível sair: a sessão continua aberta. ${motivo} Tente de novo.`);
+    }
+  }
   const pagina = PAGINAS.find((p) => p.chave === rota.pagina)!;
 
   useEffect(() => {
@@ -49,10 +60,11 @@ export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => voi
         <div className="lateral-pe">
           <div>Conectado: <strong>{usuario.nome}</strong></div>
           <div className="lateral-nota">Sessão de até 8 horas</div>
-          <button type="button" className="botao botao-lateral" onClick={aoSair}>Sair</button>
+          <button type="button" className="botao botao-lateral" onClick={tentarSair}>Sair</button>
         </div>
       </aside>
       <main id="conteudo" className="conteudo" tabIndex={-1}>
+        {erroSaida && <Aviso tipo="erro">{erroSaida}</Aviso>}
         <Cabecalho titulo={pagina.titulo} descricao={pagina.descricao} />
         <Aviso titulo="Tela em construção.">
           Esta tela ainda funciona só na versão Streamlit. Ela chega aqui na etapa 3 da migração.
