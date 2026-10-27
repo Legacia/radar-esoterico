@@ -129,8 +129,13 @@ function FichaFornecedor({ id, etapas, executar, ocupado, aoMudar, aoFechar }: {
   const [erro, setErro] = useState<string | null>(null);
   const notificar = useNotificar();
 
+  // Cada recarga gera uma versão nova; os formulários usam a versão como chave e são recriados
+  // com os dados que acabaram de chegar, nunca com uma cópia anterior à gravação.
+  const [versao, setVersao] = useState(0);
+  // Pendências da última tentativa de promoção: ficam aqui fora para sobreviver à recarga da ficha.
+  const [faltam, setFaltam] = useState<string[] | null>(null);
   const carregar = useCallback(() => pedir<Ficha>(`/fornecedores/${id}`).then(
-    (f) => { setFicha(f); setErro(null); }, (e) => setErro(mensagemDeErro(e))), [id]);
+    (f) => { setFicha(f); setVersao((v) => v + 1); setErro(null); }, (e) => setErro(mensagemDeErro(e))), [id]);
   useEffect(() => { setFicha(null); carregar(); }, [carregar]);
 
   // Grava, recarrega ficha e lista, e só então libera a trava.
@@ -148,9 +153,9 @@ function FichaFornecedor({ id, etapas, executar, ocupado, aoMudar, aoFechar }: {
         <div className="pilha">
           <Cabecalho ficha={ficha} />
           <Abas rotulo="Partes da ficha" abas={[
-            { titulo: "Checklist e etapa", conteudo: <Checklist ficha={ficha} etapas={etapas} ocupado={ocupado} gravar={gravar} executar={executar} aoMudar={() => Promise.all([carregar(), aoMudar()]).then(() => {})} /> },
+            { titulo: "Checklist e etapa", conteudo: <Checklist key={versao} ficha={ficha} faltam={faltam} setFaltam={setFaltam} etapas={etapas} ocupado={ocupado} gravar={gravar} executar={executar} aoMudar={() => Promise.all([carregar(), aoMudar()]).then(() => {})} /> },
             { titulo: "Condições e verificações", conteudo: (
-              <FormularioFornecedor ficha={ficha} ocupado={ocupado}
+              <FormularioFornecedor key={versao} ficha={ficha} ocupado={ocupado}
                 aoEnviar={(dados) => gravar(() => pedir(`/fornecedores/${id}`, { metodo: "PUT", corpo: dados }), "Fornecedor salvo.")} />
             ) },
             { titulo: `SKUs cotados (${ficha.skus.length})`, conteudo: (
@@ -160,7 +165,7 @@ function FichaFornecedor({ id, etapas, executar, ocupado, aoMudar, aoFechar }: {
               </>
             ) },
             { titulo: `Contatos (${ficha.contatos.length})`, conteudo: (
-              <Contatos ficha={ficha} ocupado={ocupado}
+              <Contatos key={versao} ficha={ficha} ocupado={ocupado}
                 aoEnviar={(dados) => gravar(() => pedir(`/fornecedores/${id}/contatos`, { corpo: dados }), "Contato registrado.")} />
             ) },
           ]} />
@@ -191,8 +196,10 @@ function Cabecalho({ ficha }: { ficha: Ficha }) {
   );
 }
 
-function Checklist({ ficha, etapas, ocupado, gravar, executar, aoMudar }: {
+function Checklist({ ficha, faltam, setFaltam, etapas, ocupado, gravar, executar, aoMudar }: {
   ficha: Ficha;
+  faltam: string[] | null;
+  setFaltam: (pendencias: string[] | null) => void;
   etapas: string[];
   ocupado: boolean;
   gravar: (acao: () => Promise<unknown>, sucesso: string) => Promise<unknown>;
@@ -202,7 +209,6 @@ function Checklist({ ficha, etapas, ocupado, gravar, executar, aoMudar }: {
   const opcoes = etapas.filter((e) => e !== "Fornecedor oficial");
   const [etapa, setEtapa] = useState(opcoes.includes(ficha.status) ? ficha.status : opcoes[0]);
   const [motivo, setMotivo] = useState("");
-  const [faltam, setFaltam] = useState<string[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const notificar = useNotificar();
 
