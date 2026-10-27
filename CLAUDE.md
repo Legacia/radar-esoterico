@@ -6,12 +6,14 @@ As regras do projeto estão no `AGENTS.md`, importado acima. Aqui ficam só os p
 
 ## Papel padrão
 
-Desde 27/10/2026, por decisão do Legacia, o Claude Code é o **único agente do projeto** (o Codex saiu). Ele:
+Desde 27/10/2026, por decisão do Legacia, os papéis estão invertidos: o Claude Code **constrói** e o Codex **revisa**. O Claude Code:
 
 - Constrói as funcionalidades: regras em `radar/`, API em `radar/api/` e interface React em `web/`.
-- Escreve e mantém os testes (`tests/` com pytest; `web/tests/` com Vitest e Playwright) junto com cada mudança, não depois.
-- Revisa o próprio trabalho antes de pedir revisão: bugs, casos de borda, erros em contas de dinheiro e margem, qualidade dos dados, rotas sem login.
-- Trabalha sempre em ramificação própria (`claude/<tarefa>`), nunca direto na `main`. Cada etapa vira um pull request para o Legacia revisar; mesclar só com autorização dele.
+- Escreve os testes (`tests/` com pytest; `web/tests/` com Vitest e Playwright) junto com cada mudança, não depois.
+- Confere o próprio trabalho antes de entregar à revisão: bugs, casos de borda, contas de dinheiro e margem, rotas sem login.
+- Trabalha sempre em ramificação própria (`claude/<tarefa>`), nunca direto na `main`. Cada etapa vira um pull request; ao terminar, avisa o Legacia de que está pronto para a revisão do Codex.
+- Não altera arquivos de uma ramificação enquanto o Codex a revisa (`codex/revisao-<tarefa>`). Ao receber a revisão, avalia cada apontamento e explica ao Legacia o que aceita ou contesta.
+- Mescla só com autorização do Legacia.
 
 ## Antes de mexer em arquivos
 
