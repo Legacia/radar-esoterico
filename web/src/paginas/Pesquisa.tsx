@@ -100,9 +100,14 @@ function Resultados({ produtos, produtoId, filtros, rodada }: {
   rodada: number;
 }) {
   const [cotacoes, setCotacoes] = useState<Cotacao[] | null>(null);
-  const [resultado, setResultado] = useState<Resultado | null>(null);
+  // O resultado guarda a seleção que o gerou; só aparece se for a seleção atual. Assim nunca se
+  // mostram margens de outra cotação, nem quando a consulta nova falha.
+  const [resultado, setResultado] = useState<{ chave: string; dados: Resultado } | null>(null);
+  const [marketplaces, setMarketplaces] = useState<string[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [termo, setTermo] = useState(filtros.termo ?? "");
+  // Voltar e avançar no navegador mudam o endereço: o campo acompanha o filtro que vale.
+  useEffect(() => { setTermo(filtros.termo ?? ""); }, [filtros.termo]);
   const ultima = useRef(0);
 
   const ir = (novos: Record<string, string>) => {
@@ -118,15 +123,22 @@ function Resultados({ produtos, produtoId, filtros, rodada }: {
   const cotacaoId = cotacoes?.some((c) => String(c.id) === filtros.cotacao) ? Number(filtros.cotacao) : cotacoes?.[0]?.id;
   const marketplace = filtros.marketplace ?? "";
   const termoFiltro = filtros.termo ?? "";
+  const chaveAtual = cotacaoId === undefined ? "" : new URLSearchParams({
+    produto_id: String(produtoId), cotacao_id: String(cotacaoId), marketplace, termo: termoFiltro }).toString();
+  const atual = resultado?.chave === chaveAtual ? resultado.dados : null;
 
   // Só a resposta da consulta mais recente aparece, mesmo com filtros trocados rapidamente.
   useEffect(() => {
     if (cotacaoId === undefined) return;
     const consulta = ++ultima.current;
     const busca = new URLSearchParams({ produto_id: String(produtoId), cotacao_id: String(cotacaoId), marketplace, termo: termoFiltro });
+    const chave = busca.toString();
     pedir<Resultado>(`/pesquisa?${busca}`).then(
-      (r) => { if (consulta === ultima.current) { setResultado(r); setErro(null); } },
-      (e) => { if (consulta === ultima.current) setErro(mensagemDeErro(e)); });
+      (r) => {
+        if (consulta !== ultima.current) return;
+        setResultado({ chave, dados: r }); setMarketplaces(r.marketplaces); setErro(null);
+      },
+      (e) => { if (consulta === ultima.current) { setResultado(null); setErro(mensagemDeErro(e)); } });
   }, [produtoId, cotacaoId, marketplace, termoFiltro, rodada]);
 
   function buscar(evento: FormEvent) {
@@ -157,7 +169,7 @@ function Resultados({ produtos, produtoId, filtros, rodada }: {
             <label>Filtrar marketplace
               <select value={marketplace} onChange={(e) => ir({ marketplace: e.target.value })}>
                 <option value="">Todos</option>
-                {resultado?.marketplaces.map((m) => <option key={m} value={m}>{m}</option>)}
+                {marketplaces.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
             </label>
             <label>Buscar no título dos anúncios
@@ -174,7 +186,8 @@ function Resultados({ produtos, produtoId, filtros, rodada }: {
       {cotacoes && !cotacoes.length && (
         <Aviso>Registre uma cotação desse produto em <a href={enderecoDe("produtos", { ficha: String(produtoId) })}>Produtos e SKUs</a> para definir o custo da pesquisa.</Aviso>
       )}
-      {resultado && cotacoes?.length ? <Painel resultado={resultado} /> : null}
+      {atual && cotacoes?.length ? <Painel resultado={atual} /> : null}
+      {!atual && !erro && cotacoes?.length ? <p className="legenda">Calculando…</p> : null}
     </>
   );
 }

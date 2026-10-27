@@ -111,6 +111,27 @@ describe("Pesquisa de oportunidades", () => {
     expect(screen.getByText("Preço mediano").nextSibling).toHaveTextContent("R$ 99,00");
   });
 
+  it("consulta nova que falha não deixa à vista o resultado da cotação anterior", async () => {
+    simular((c) => c.caminho.includes("cotacao_id=11") ? Promise.resolve(undefined).then(() => { throw new TypeError("rede"); }) : undefined);
+    mostrar();
+    expect(await screen.findByText("Anúncios analisados")).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText("Cotação usada como custo"), "11");
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText("Anúncios analisados")).toBeNull();
+    expect(screen.queryByText("Preço mínimo para o alvo")).toBeNull();
+  });
+
+  it("voltar no navegador devolve o termo da busca ao campo", async () => {
+    const chamadas = simular();
+    mostrar("#/pesquisa?produto=1&termo=incenso");
+    expect(await screen.findByLabelText("Buscar no título dos anúncios")).toHaveValue("incenso");
+    window.location.hash = "#/pesquisa?produto=1&termo=cristal";
+    await waitFor(() => expect(screen.getByLabelText("Buscar no título dos anúncios")).toHaveValue("cristal"));
+    window.location.hash = "#/pesquisa?produto=1&termo=incenso";
+    await waitFor(() => expect(screen.getByLabelText("Buscar no título dos anúncios")).toHaveValue("incenso"));
+    await waitFor(() => expect(consultas(chamadas).at(-1)?.termo).toBe("incenso"));
+  });
+
   it("cadastra anúncio uma vez só, com o produto pesquisado já escolhido", async () => {
     const chamadas = simular();
     mostrar();
