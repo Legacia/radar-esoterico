@@ -78,6 +78,18 @@ def test_inventario_de_rotas_nao_ignora_subaplicacao_api(cliente):
         rotas_da_api(cliente.app)
 
 
+@pytest.mark.parametrize("caminho", ["/API/arquivo.json", "/api./arquivo.json", "/api%20/arquivo.json"])
+def test_alias_do_windows_nao_serve_arquivos_da_api(db, conta, tmp_path, monkeypatch, caminho):
+    interface = tmp_path / "interface"
+    (interface / "api").mkdir(parents=True)
+    (interface / "api" / "arquivo.json").write_text('{"dado_ficticio": true}', encoding="utf-8")
+    monkeypatch.setattr(api, "INTERFACE", interface)
+    with TestClient(api.criar_app()) as cliente:
+        resposta = cliente.get(caminho)
+        assert resposta.status_code in (401, 404)
+        assert "dado_ficticio" not in resposta.text
+
+
 def test_rota_montada_sem_dependencia_nao_vaza_dados(cliente):
     subapp = FastAPI()
     subapp.add_api_route("/dados", lambda: {"ficticio": True})

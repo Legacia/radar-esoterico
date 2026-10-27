@@ -25,6 +25,18 @@ from radar.valores import dinheiro_texto
 INTERFACE = Path(__file__).resolve().parents[2] / "web" / "dist"
 
 
+class InterfaceEstatica(StaticFiles):
+    def lookup_path(self, path):
+        arquivo, informacao = super().lookup_path(path)
+        if informacao is not None:
+            relativo = Path(arquivo).relative_to(Path(self.directory).resolve())
+            # No Windows, API, api. e api podem apontar para o mesmo diretório.
+            # Nenhum arquivo do build substitui uma rota da API, mesmo por alias.
+            if relativo.parts and relativo.parts[0].rstrip(" .").casefold() == "api":
+                raise HTTPException(status_code=404, detail="Não encontrado.")
+        return arquivo, informacao
+
+
 class Entrada(BaseModel):
     email: str
     senha: str
@@ -139,5 +151,5 @@ def criar_app():
     app.include_router(publico)
     app.include_router(protegido)
     if INTERFACE.is_dir():
-        app.mount("/", StaticFiles(directory=INTERFACE, html=True), name="interface")
+        app.mount("/", InterfaceEstatica(directory=INTERFACE, html=True), name="interface")
     return app
