@@ -211,3 +211,8 @@ cython_debug/
 .idea/
 .DS_Store
 Thumbs.db
+# Interface React
+node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
