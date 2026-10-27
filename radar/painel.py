@@ -1,5 +1,6 @@
 """Indicadores, tarefas e pendências calculadas a partir das datas registradas."""
 from datetime import date
+from decimal import Decimal
 
 from radar.banco import conectar
 from radar.compras import _avaliar
@@ -27,6 +28,8 @@ def calcular_pendencias(fornecedores, skus, interacoes, parametros, limite_dias,
                 "data": contato["data"], "responsavel": "Legacia"})
         if f["status"] == "Em avaliação" and not f["amostra_avaliada"]:
             resultado.append({"tipo": "Amostra pendente", "referencia": f["nome"], "data": None, "responsavel": "Anna"})
+    # Mesmo piso de 20% usado na promoção do fornecedor e no critério de compra.
+    alvo = max(Decimal("0.20"), parametros.margem_alvo_pct)
     for sku in skus:
         if sku["fornecedor_id"] not in ativos:
             continue
@@ -35,7 +38,7 @@ def calcular_pendencias(fornecedores, skus, interacoes, parametros, limite_dias,
             resultado.append({"tipo": "Cotação antiga", "referencia": referencia,
                 "data": sku["data_cotacao"], "responsavel": "Legacia"})
         margem = estimar_margem(sku, parametros)
-        if margem is not None and margem.margem_pct < parametros.margem_alvo_pct:
+        if margem is not None and margem.margem_pct < alvo:
             resultado.append({"tipo": "Margem abaixo do alvo", "referencia": referencia,
                 "data": sku["data_cotacao"], "responsavel": "Legacia"})
     return resultado

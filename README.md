@@ -91,8 +91,10 @@ Código de negócio: `radar/`. Interface: `app/`. Novas telas devem chamar
    registra custo, quantidade mínima e data. Informe também seu preço conservador de venda
    para obter a estimativa de margem; em branco, o SKU não conta no checklist.
 5. Na ficha do fornecedor, tente **Promover a fornecedor oficial**: as pendências são exibidas
-   sem mudar a etapa. A promoção exige todas as verificações e três códigos de SKU distintos
+   sem mudar a etapa. A promoção exige todas as verificações e três produtos diferentes
    com margem no alvo configurado, respeitando o piso de 20% aprovado pelo Legacia.
+   Vários códigos do mesmo produto contam como um só, pela melhor margem entre as
+   cotações atuais desses códigos.
    Descartar ou pausar exige motivo. Nenhuma dessas decisões é automática.
 
 Use dados comerciais somente no banco local. Os testes já cobrem o cenário completo com
