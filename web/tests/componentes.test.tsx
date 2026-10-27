@@ -51,7 +51,9 @@ describe("Gaveta", () => {
     return (
       <>
         <button onClick={() => setAberta(true)}>Abrir ficha</button>
-        <Gaveta aberta={aberta} titulo="Ficha" aoFechar={() => setAberta(false)}>Conteúdo</Gaveta>
+        <Gaveta aberta={aberta} titulo="Ficha" aoFechar={() => setAberta(false)}>
+          <input aria-label="Nome" />
+        </Gaveta>
       </>
     );
   }
@@ -63,6 +65,23 @@ describe("Gaveta", () => {
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByText("Abrir ficha")).toHaveFocus();
+  });
+
+  it("Tab e Shift+Tab não saem da gaveta", async () => {
+    render(<Exemplo />);
+    await userEvent.click(screen.getByText("Abrir ficha"));
+    const fechar = screen.getByRole("button", { name: "Fechar" });
+    const nome = screen.getByLabelText("Nome");
+    await userEvent.tab({ shift: true });
+    expect(nome).toHaveFocus();
+    await userEvent.tab();
+    expect(fechar).toHaveFocus();
+    await userEvent.tab();
+    expect(nome).toHaveFocus();
+    await userEvent.tab();
+    expect(fechar).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(nome).toHaveFocus();
   });
 });
 
