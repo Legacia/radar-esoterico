@@ -75,7 +75,7 @@ def mostrar():
     tabela_skus(listar_skus(fornecedor_id=escolhido), config)
     st.caption("Para lançar ou renovar cotações, use Produtos e SKUs.")
     st.subheader("Checklist de promoção")
-    st.caption(f"Exige margem de pelo menos {percentual(max(Decimal('0.20'), config.parametros.margem_alvo_pct))} em três SKUs distintos.")
+    st.caption(f"Exige margem de pelo menos {percentual(max(Decimal('0.20'), config.parametros.margem_alvo_pct))} em três produtos distintos.")
     checklist = avaliar_promocao(escolhido)
     for nome, ok in checklist.items():
         st.write(f"{'✅' if ok else '⬜'} {nome}")

@@ -4,7 +4,7 @@ from streamlit.testing.v1 import AppTest
 
 from radar.fornecedores import obter_fornecedor
 from radar.margem.configuracao import obter_configuracao
-from radar.produtos import listar_produtos, listar_skus
+from radar.produtos import listar_produtos, listar_skus, salvar_produto
 
 
 def pagina(modulo, conta):
@@ -78,7 +78,12 @@ def test_fluxo_cadastro_skus_checklist_e_promocao(conta, db):
     clicar(catalogo, "Salvar produto")
     assert not catalogo.exception
     assert len(listar_produtos(db)) == 1
-    for n in range(3):
+    # A promoção exige três produtos diferentes; os outros dois entram direto no banco.
+    for n in (2, 3):
+        salvar_produto(f"Produto fictício de interface {n}", "", "Candidato", caminho=db)
+    catalogo.run()
+    for n, produto_id in enumerate(p["id"] for p in listar_produtos(db)):
+        catalogo.selectbox[0].set_value(produto_id).run()
         campo(catalogo, "Código no fornecedor", f"FICTICIO-{n}")
         campo(catalogo, "Custo unitário (R$)", "20,00")
         campo(catalogo, "Preço conservador de venda (R$), opcional", "59,90")

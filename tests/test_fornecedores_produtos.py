@@ -25,8 +25,10 @@ def produto(db):
 
 
 def tres_skus(fornecedor, produto, db, preco=D("59.90")):
-    for n in range(3):
-        registrar_cotacao(fornecedor, produto, f"SKU-{n}", D(20), 1, date.today(), preco, db)
+    # A promoção exige três produtos diferentes, não três códigos do mesmo produto.
+    produtos = [produto] + [salvar_produto(f"Produto fictício {n}", "", "Candidato", caminho=db) for n in (2, 3)]
+    for n, p in enumerate(produtos):
+        registrar_cotacao(fornecedor, p, f"SKU-{n}", D(20), 1, date.today(), preco, db)
 
 
 def test_ciclo_de_vida_e_promocao(fornecedor, produto, db):

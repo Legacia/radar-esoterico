@@ -79,10 +79,13 @@ def listar_interacoes(fornecedor_id, caminho=None):
 
 def _checklist(c, fornecedor_id):
     config = _ler(c)
+    # Cada produto conta uma vez, pela melhor margem entre os seus códigos atuais.
     margens = {}
     for sku in _skus_atuais(c, fornecedor_id):
         resultado = estimar_margem(sku, config.parametros)
-        margens[sku["codigo"]] = resultado.margem_pct if resultado else None
+        atual = margens.setdefault(sku["produto_id"], None)
+        if resultado and (atual is None or resultado.margem_pct > atual):
+            margens[sku["produto_id"]] = resultado.margem_pct
     return checklist_promocao(_obter(c, fornecedor_id), margens, config.parametros.margem_alvo_pct)
 
 

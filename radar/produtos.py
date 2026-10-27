@@ -32,7 +32,7 @@ def _skus_atuais(c, fornecedor_id=None, produto_id=None):
     # Não contar re-cotações do mesmo SKU como produtos adicionais para promoção.
     sql = """WITH cotacoes AS (
         SELECT s.*, ROW_NUMBER() OVER (
-            PARTITION BY fornecedor_id, codigo ORDER BY data_cotacao DESC, id DESC) AS posicao
+            PARTITION BY fornecedor_id, codigo COLLATE NOCASE ORDER BY data_cotacao DESC, id DESC) AS posicao
         FROM sku_fornecedor s)
         SELECT s.*, p.nome AS produto, f.nome AS fornecedor FROM cotacoes s
         JOIN produto p ON p.id=s.produto_id JOIN fornecedor f ON f.id=s.fornecedor_id
@@ -70,10 +70,14 @@ def registrar_cotacao(fornecedor_id, produto_id, codigo, custo, quantidade_minim
             raise ValueError("Fornecedor não encontrado.")
         if not c.execute("SELECT 1 FROM produto WHERE id=?", (produto_id,)).fetchone():
             raise ValueError("Produto não encontrado.")
-        anterior = c.execute("SELECT produto_id FROM sku_fornecedor WHERE fornecedor_id=? AND codigo=?",
-                             (fornecedor_id, codigo)).fetchone()
+        # "INC-1" e "inc-1" são o mesmo código; a recotação mantém a grafia já registrada.
+        anterior = c.execute("""SELECT produto_id, codigo FROM sku_fornecedor
+            WHERE fornecedor_id=? AND codigo=? COLLATE NOCASE ORDER BY id LIMIT 1""",
+            (fornecedor_id, codigo)).fetchone()
         if anterior and anterior[0] != produto_id:
             raise ValueError("Este código já identifica outro produto neste fornecedor.")
+        if anterior:
+            codigo = anterior[1]
         cursor = c.execute("""INSERT INTO sku_fornecedor (fornecedor_id, produto_id, codigo,
             custo_unitario_centavos, quantidade_minima, data_cotacao, preco_venda_centavos)
             VALUES (?, ?, ?, ?, ?, ?, ?)""",
