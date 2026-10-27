@@ -2,7 +2,7 @@
 
 Ferramenta local de inteligência comercial para a **Tenda da Bruxa 2.0**: venda de produtos esotéricos em marketplaces (Mercado Livre, Shopee etc.), com estoque próprio, como renda extra.
 
-Este arquivo é a fonte única de regras do projeto. Vale para o Claude Code e para qualquer pessoa que mexa no código. Em caso de dúvida entre este arquivo e uma instrução solta, siga este arquivo e avise o responsável.
+Este arquivo é a fonte única de regras do projeto. Vale para o Claude Code, para o Codex e para qualquer pessoa que mexa no código. Em caso de dúvida entre este arquivo e uma instrução solta, siga este arquivo e avise o responsável.
 
 ## Quem decide o quê
 
@@ -217,9 +217,11 @@ Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Lega
 ## Como trabalhar com Git
 
 - `main` guarda só código revisado e funcionando. Nada de commit direto na `main`.
-- Uma ramificação por tarefa: `claude/<tarefa>`. As ramificações `codex/...` antigas são só histórico.
-- Tudo entra por pull request, revisado por uma pessoa.
-- **Decisão do Legacia em 27/10/2026: o projeto segue só com o Claude Code, sem o Codex.** O Claude Code constrói, testa e revisa o próprio trabalho; a revisão final de cada pull request é do Legacia. Se no futuro outro agente voltar, dois agentes nunca editam os mesmos arquivos ao mesmo tempo.
+- **Papéis invertidos (decisão do Legacia em 27/10/2026):** o **Claude Code constrói** (regras, API, interface React e os testes de cada mudança); o **Codex revisa** (bugs, casos de borda, erros em contas de dinheiro e margem, rotas sem login, qualidade dos dados) e acrescenta testes que faltarem. A aprovação final e a mesclagem de cada pull request são do Legacia.
+- Ramificações: `claude/<tarefa>` para construção; `codex/revisao-<tarefa>` para correções e testes da revisão, criada a partir da ramificação revisada e enviada como pull request contra ela. As ramificações `codex/mvp-...` antigas são só histórico.
+- Tudo entra por pull request, revisado pelo Codex e aprovado pelo Legacia.
+- **Dois agentes nunca editam os mesmos arquivos ao mesmo tempo.** Enquanto o Codex revisa uma ramificação, o Claude Code não altera os mesmos arquivos; correções pedidas na revisão são feitas por um dos dois, combinado com o Legacia.
+- O revisor relata o que encontrou em linguagem simples no pull request. Mudança de regra de negócio nunca é feita na revisão: vira pergunta para o Legacia.
 - Mensagens de commit curtas, em português, dizendo o que mudou.
 - As tarefas do plano de 30 dias viram Issues no GitHub, com responsável e semana.
 
@@ -280,7 +282,7 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 
 ## Migração para React (decisão de 27/10/2026)
 
-O Legacia decidiu migrar a interface para React antes de começar o uso real, e seguir o projeto só com o Claude Code. Regras da migração:
+O Legacia decidiu migrar a interface para React antes de começar o uso real. O Claude Code constrói cada etapa e o Codex revisa. Regras da migração:
 
 - **As regras de negócio em `radar/` não mudam** e seus testes continuam valendo. A migração troca só a interface e acrescenta a API.
 - Ordem de trabalho, cada etapa em ramificação e pull request próprios:
