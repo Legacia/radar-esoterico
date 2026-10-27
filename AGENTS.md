@@ -218,10 +218,10 @@ Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Lega
 
 - `main` guarda só código revisado e funcionando. Nada de commit direto na `main`.
 - **Papéis invertidos (decisão do Legacia em 27/10/2026):** o **Claude Code constrói** (regras, API, interface React e os testes de cada mudança); o **Codex revisa** (bugs, casos de borda, erros em contas de dinheiro e margem, rotas sem login, qualidade dos dados) e acrescenta testes que faltarem. As mesclagens são feitas pelos agentes, conforme as regras abaixo.
-- Ramificações: `claude/<tarefa>` para construção; `codex/revisao-<tarefa>` para correções e testes da revisão, criada a partir da ramificação revisada e enviada como pull request contra ela. As ramificações `codex/mvp-...` antigas são só histórico.
+- Ramificações: `claude/<tarefa>` para construção. Na revisão automática o Codex só comenta no pull request, e as correções são feitas pelo Claude Code na própria `claude/<tarefa>`. Se o Codex for chamado para corrigir algo (comentário `@codex` no pull request), ele usa `codex/revisao-<tarefa>`, criada a partir da ramificação revisada e enviada como pull request contra ela. As ramificações `codex/mvp-...` antigas são só histórico.
 - Tudo entra por pull request revisado pelo Codex.
 - **Mesclagem pelos agentes (decisão do Legacia em 27/10/2026: "eu não vou mesclar nada, façam isso vocês").** O Legacia não mescla; os agentes mesclam sozinhos, sem pedir autorização a cada vez, desde que:
-  1. O Codex tenha concluído a revisão e registrado o relato no pull request.
+  1. O Codex tenha concluído a revisão e registrado o relato no pull request (revisão automática do GitHub, ver "Review guidelines"). Os testes automáticos do GitHub (Actions) também precisam ter passado no pull request.
   2. O Claude Code tenha avaliado cada apontamento: os erros confirmados estão corrigidos e os pontos contestados estão explicados no pull request.
   3. Todos os testes passem (`pytest`, e os testes da interface quando existirem), `pip check` não acuse problema e `git diff --check` esteja limpo, na versão já mesclada.
   4. Nenhum banco, CSV real, planilha, `.env`, segredo, `node_modules/` ou `web/dist/` esteja no diff.
@@ -302,3 +302,23 @@ O Legacia decidiu migrar a interface para React antes de começar o uso real. O 
   5. Retirar a pasta `app/` e o Streamlit só depois que todas as telas React estiverem aprovadas.
 - Enquanto a migração não termina, a versão Streamlit da `main` continua funcionando. O banco é o mesmo; a API não muda o esquema sem nova migração.
 - Novas dependências entram fixadas por versão (`requirements.txt` e `package-lock.json`).
+
+## Review guidelines
+
+Seção lida pelo Codex na revisão automática de pull requests no GitHub (processo automatizado decidido pelo Legacia em 27/10/2026). Escreva a revisão em **português do Brasil**, em linguagem simples: o Legacia não é programador.
+
+Como revisar cada pull request do Claude Code:
+
+- Leia a descrição do pull request: ela diz o que mudou, o que conferir e como testar.
+- Separe o relato em três grupos: **erros confirmados** (com o arquivo, a linha e um exemplo concreto que falha), **riscos** e **sugestões**. Não marque como erro o que é só preferência de estilo.
+- Prioridade máxima (trate como P0/P1):
+  - Dinheiro com `float`, em Python ou TypeScript; arredondamento errado; o caso obrigatório da margem deixando de dar R$ 14,33, 23,9% e preço mínimo R$ 55,56.
+  - Regra de negócio diferente do AGENTS.md: promoção de fornecedor (três produtos diferentes, piso de 20%, cotação mais recente por código sem diferenciar maiúsculas), critérios de compra, limite de 20% do orçamento para produto não validado, pendências do painel.
+  - Regra de margem, compra ou promoção recalculada no React em vez de vir da API.
+  - Rota da API que funcione sem sessão (só `POST /api/entrar` pode), cookie sem `HttpOnly`/`SameSite=Strict`, sessão que passe de 8 horas ou que seja prorrogada pelo uso, senha fora de hash, mensagem de login que revele se o e-mail existe.
+  - Migração de banco publicada que tenha sido editada, ou mudança de esquema sem migração nova.
+  - Banco, CSV real, planilha, `.env`, chave, senha, `node_modules/` ou `web/dist/` no diff.
+- Confira também: casos de borda (valores vazios, zero, negativos, datas futuras, textos com acento), mensagens de erro em português, testes que realmente testam o que dizem, telas protegidas por login, acessibilidade básica (foco pelo teclado, rótulos).
+- Fora do escopo do MVP (nuvem, perfis de usuário, cadastro aberto, recuperação de senha por e-mail, coleta automática agressiva de marketplaces) é erro, não sugestão.
+- Se algum ponto depender de uma decisão de negócio, **não proponha a mudança como correção**: registre como "Pergunta para o Legacia".
+- Não aprove nem mescle: quem mescla é o Claude Code, depois de avaliar a revisão (ver "Mesclagem pelos agentes").
