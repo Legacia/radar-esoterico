@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Painel, type DadosPainel } from "../src/paginas/Painel";
 import { ProvedorNotificacoes } from "../src/componentes/Notificacoes";
@@ -98,6 +98,46 @@ describe("Painel", () => {
     expect(JSON.parse(String(post.init?.body))).toEqual({
       titulo: "Cotar suporte fictício", semana: 3, responsavel: "Legacia", concluida: false });
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("cliques repetidos enquanto salva enviam uma tarefa só", async () => {
+    const chamadas = simular();
+    mostrar();
+    await userEvent.click(await screen.findByRole("button", { name: "Cadastrar tarefa" }));
+    const gaveta = screen.getByRole("dialog", { name: "Cadastrar tarefa" });
+    await userEvent.type(within(gaveta).getByLabelText("Título da tarefa"), "Tarefa fictícia");
+    let liberar!: () => void;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (entrada, init) => {
+      chamadas.push({ caminho: String(entrada), init });
+      if (String(entrada) === "/api/tarefas") await new Promise<void>((r) => { liberar = r; });
+      return new Response(JSON.stringify(String(entrada) === "/api/painel" ? DADOS : { id: 9 }), { status: 200 });
+    });
+    const salvar = within(gaveta).getByRole("button", { name: "Salvar tarefa" });
+    fireEvent.submit(salvar.closest("form")!);
+    fireEvent.submit(salvar.closest("form")!);
+    fireEvent.submit(salvar.closest("form")!);
+    expect(await within(gaveta).findByRole("button", { name: "Salvando…" })).toBeDisabled();
+    liberar();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(chamadas.filter((c) => c.caminho === "/api/tarefas")).toHaveLength(1);
+  });
+
+  it("caixinha fica travada enquanto a tarefa é salva", async () => {
+    const chamadas = simular();
+    mostrar();
+    const caixa = await screen.findByRole("checkbox", { name: "Avaliar amostra fictícia" });
+    let liberar!: () => void;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (entrada, init) => {
+      chamadas.push({ caminho: String(entrada), init });
+      if (String(entrada).startsWith("/api/tarefas/")) await new Promise<void>((r) => { liberar = r; });
+      return new Response(JSON.stringify(String(entrada) === "/api/painel" ? DADOS : { id: 2 }), { status: 200 });
+    });
+    await userEvent.click(caixa);
+    expect(caixa).toBeDisabled();
+    await userEvent.click(caixa);
+    liberar();
+    await waitFor(() => expect(caixa).not.toBeDisabled());
+    expect(chamadas.filter((c) => c.caminho === "/api/tarefas/2")).toHaveLength(1);
   });
 
   it("erro da API no formulário aparece na gaveta", async () => {

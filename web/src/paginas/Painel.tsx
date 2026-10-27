@@ -1,6 +1,6 @@
 // Painel: o que precisa de ação, funil de fornecedores e plano de 30 dias.
 // Todos os números vêm prontos de GET /api/painel; aqui só se formata e se desenha.
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ErroApi, pedir } from "../api";
 import { Aviso, Indicador, Painel as Caixa, Selo, type Tom } from "../componentes/basicos";
 import { Gaveta } from "../componentes/Gaveta";
@@ -161,15 +161,20 @@ function Funil({ etapas }: { etapas: DadosPainel["funil"] }) {
 function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluidas: number; aoSalvar: () => void }) {
   const notificar = useNotificar();
   const [editando, setEditando] = useState<Tarefa | "nova" | null>(null);
+  const [salvando, setSalvando] = useState<number | null>(null);
   const total = tarefas.length;
 
   async function alternar(t: Tarefa) {
+    if (salvando !== null) return;
+    setSalvando(t.id);
     try {
       await pedir(`/tarefas/${t.id}`, { metodo: "PUT", corpo: { titulo: t.titulo, semana: t.semana, responsavel: t.responsavel, concluida: !t.concluida } });
       notificar(t.concluida ? "Tarefa reaberta." : "Tarefa concluída.");
       aoSalvar();
     } catch (e) {
       notificar(e instanceof ErroApi ? e.message : "Não foi possível salvar.", "erro");
+    } finally {
+      setSalvando(null);
     }
   }
 
@@ -189,7 +194,8 @@ function Plano({ tarefas, concluidas, aoSalvar }: { tarefas: Tarefa[]; concluida
                 {daSemana.map((t) => (
                   <li key={t.id}>
                     <label className="tarefa">
-                      <input type="checkbox" checked={!!t.concluida} onChange={() => alternar(t)} />
+                      <input type="checkbox" checked={!!t.concluida} onChange={() => alternar(t)}
+                        disabled={salvando !== null} />
                       <span className={t.concluida ? "riscado" : undefined}>{t.titulo}</span>
                     </label>
                     <div className="tarefa-pe">
@@ -221,9 +227,15 @@ export function FormularioTarefa({ tarefa, aoSalvar }: { tarefa?: Tarefa; aoSalv
   const [responsavel, setResponsavel] = useState(tarefa?.responsavel ?? "Legacia");
   const [concluida, setConcluida] = useState(!!tarefa?.concluida);
   const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  // A trava em ref vale na hora; o estado só muda no próximo desenho da tela.
+  const emAndamento = useRef(false);
 
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
+    if (emAndamento.current) return;
+    emAndamento.current = true;
+    setSalvando(true);
     setErro(null);
     try {
       const corpo = { titulo, semana, responsavel, concluida };
@@ -233,6 +245,9 @@ export function FormularioTarefa({ tarefa, aoSalvar }: { tarefa?: Tarefa; aoSalv
       aoSalvar();
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : "Não foi possível salvar.");
+    } finally {
+      emAndamento.current = false;
+      setSalvando(false);
     }
   }
 
@@ -250,7 +265,9 @@ export function FormularioTarefa({ tarefa, aoSalvar }: { tarefa?: Tarefa; aoSalv
         <input type="checkbox" checked={concluida} onChange={(e) => setConcluida(e.target.checked)} />
         Tarefa concluída
       </label>
-      <button type="submit" className="botao botao-principal">Salvar tarefa</button>
+      <button type="submit" className="botao botao-principal" disabled={salvando}>
+        {salvando ? "Salvando…" : "Salvar tarefa"}
+      </button>
     </form>
   );
 }
