@@ -258,3 +258,11 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 - `kit_item.sku_fornecedor_id` registra a cotação de custo do componente; `kit.quantidade_planejada` permite somar necessidades de componentes compartilhados sem baixa automática de estoque.
 - Novos módulos de negócio: `radar/mercado.py`, `radar/compras.py`, `radar/kits.py`, `radar/painel.py` e importador em `radar/importacao/`. Telas protegidas em `app/pesquisa.py`, `app/importar.py`, `app/compras.py`, `app/kits.py`; `app/painel.py` passa a mostrar os indicadores, tarefas e pendências.
 - Único CSV de exemplo: `exemplos/anuncios_ficticios.csv`, sem informação real. Formato e decisões confirmadas sobre critérios de compra, estoque e pendências estão documentados no README.
+
+## Interface (revisão visual de 27/10/2026)
+
+- Decisão do Legacia: manter o Streamlit e aplicar o padrão visual do projeto de referência (ERT Engagement Monitor), em vez de trocar para React. Textos da interface continuam em português do Brasil.
+- Tema em `.streamlit/config.toml`: fundo `#f3f5f8`, painéis brancos, barra lateral escura `#19222e`, cor principal `#24406f`, fonte IBM Plex Sans (com Segoe UI de reserva, se não houver internet) e cores de selo (verde cumprido, laranja pendente, vermelho crítico, amarelo atenção, cinza neutro).
+- `app/componentes.py` concentra o estilo extra (`aplicar_estilo`), o cabeçalho de página e os selos (`selo`, `selos_criterios`). `app/navegacao.py` guarda as páginas registradas em `app/main.py`, para links entre telas (`link`).
+- Navegação agrupada em seções: Visão geral, Fornecimento, Mercado e Decisão.
+- Pesquisa de oportunidades é **simulação livre** (decisão do Legacia em 27/10/2026): usa a margem-alvo configurada, mesmo abaixo de 20%. Promoção de fornecedor, decisão de compra e pendências do Painel continuam exigindo o piso de 20%.
