@@ -150,3 +150,12 @@ def test_campo_com_multiplas_linhas_e_erro_recuperavel_preserva_as_demais(db):
     r = importar_csv(conteudo,db)
     assert r.importadas == 2
     assert r.erros[0]["linha"] == 4
+
+
+def test_dois_precos_no_mesmo_dia_ficam_no_historico_e_o_ultimo_importado_vale(db):
+    dia = date.today().isoformat()
+    relatorio = importar_csv(CABECALHO + linha(preco="10,00", data=dia) + linha(preco="12,00", data=dia), db)
+    assert (relatorio.importadas, relatorio.repetidas, relatorio.erros) == (2, 0, [])
+    importar_csv(CABECALHO + linha(preco="10,00", data=dia), db)
+    with conectar(db) as c:
+        assert c.execute("SELECT count(*) FROM preco_observado").fetchone()[0] == 2
