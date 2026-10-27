@@ -26,7 +26,12 @@ def entrar(cliente, email=EMAIL, senha=SENHA):
 def rotas_da_api(app):
     # As rotas vivem só nos dois roteadores de radar.api; o app não pode ter rota solta fora deles.
     import radar.api as api
+    from fastapi.staticfiles import StaticFiles
     from starlette.routing import Mount
+    montagens = [r for r in app.routes if isinstance(r, Mount)]
+    assert len(montagens) <= 1
+    assert all(r.path in ("", "/") and isinstance(r.app, StaticFiles) for r in montagens), \
+        "Só a interface estática na raiz pode ficar fora dos dois roteadores auditados."
     assert len([r for r in app.routes if not isinstance(r, Mount)]) == 2
     return [(m, r.path) for roteador in (api.publico, api.protegido)
             for r in roteador.routes if isinstance(r, APIRoute) for m in r.methods]
@@ -92,7 +97,7 @@ def test_cookie_inventado_nao_entra(cliente):
 
 
 def test_sessao_expira_em_oito_horas_sem_prorrogar(cliente, monkeypatch):
-    agora = [1000.0]
+    agora = [1000]
     monkeypatch.setattr(sessoes.time, "monotonic", lambda: agora[0])
     entrar(cliente)
     agora[0] += sessoes.DURACAO_SEGUNDOS - 1
@@ -104,9 +109,11 @@ def test_sessao_expira_em_oito_horas_sem_prorrogar(cliente, monkeypatch):
 def test_limite_de_tentativas_erradas(cliente):
     for _ in range(MAXIMO_FALHAS):
         assert entrar(cliente, senha="errada-123456").status_code == 401
-    bloqueado = entrar(cliente)
+    bloqueado = entrar(cliente, senha="errada-123456")
     assert bloqueado.status_code == 429
     assert "set-cookie" not in bloqueado.headers
+    # Decisão do Legacia na revisão: a senha correta continua podendo entrar.
+    assert entrar(cliente).status_code == 200
 
 
 def test_calculadora_caso_obrigatorio_da_margem(cliente):

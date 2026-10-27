@@ -23,8 +23,17 @@ class LimiteTentativas:
             return len(self._recentes(origem)) >= MAXIMO_FALHAS
 
     def falhou(self, origem):
+        """Registra uma falha admitida; retorna False se a janela já está cheia.
+
+        A decisão e o registro usam a mesma trava para pedidos simultâneos
+        não atravessarem juntos a quinta falha.
+        """
         with self._trava:
-            self._recentes(origem).append(self._relogio())
+            falhas = self._recentes(origem)
+            if len(falhas) >= MAXIMO_FALHAS:
+                return False
+            falhas.append(self._relogio())
+            return True
 
     def acertou(self, origem):
         with self._trava:

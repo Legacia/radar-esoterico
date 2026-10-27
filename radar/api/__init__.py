@@ -3,10 +3,11 @@
 Dinheiro sai como texto decimal ("14.33") ou centavos inteiros; percentuais como fração em texto
 ("0.239..."). A formatação brasileira fica para a interface.
 """
-from decimal import Decimal
 from pathlib import Path
+from posixpath import normpath
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -52,11 +53,10 @@ protegido = APIRouter(prefix="/api", dependencies=[Depends(exigir_sessao)])
 def entrar(dados: Entrada, request: Request, response: Response):
     limite = request.app.state.limite
     origem = request.client.host if request.client else "desconhecido"
-    if limite.bloqueado(origem):
-        raise HTTPException(status_code=429, detail="Muitas tentativas. Aguarde alguns minutos e tente de novo.")
     usuario = autenticar(dados.email, dados.senha)
     if usuario is None:
-        limite.falhou(origem)
+        if not limite.falhou(origem):
+            raise HTTPException(status_code=429, detail="Muitas tentativas. Aguarde alguns minutos e tente de novo.")
         raise HTTPException(status_code=401, detail="E-mail ou senha inválidos.")
     limite.acertou(origem)
     sessoes = request.app.state.sessoes
@@ -110,6 +110,26 @@ def criar_app():
     app = FastAPI(title="Radar Esotérico", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.sessoes = Sessoes()
     app.state.limite = LimiteTentativas()
+
+    @app.middleware("http")
+    async def proteger_namespace_api(request, proximo):
+        # StaticFiles normaliza pontos e separadores (inclusive \ no Windows).
+        # Um arquivo da interface não pode virar uma API pública por esse caminho.
+        caminho = normpath("/" + request.scope["path"].replace("\\", "/").lstrip("/"))
+        entrada = request.method == "POST" and request.scope["path"] == "/api/entrar"
+        if (caminho == "/api" or caminho.startswith("/api/")) and not entrada:
+            try:
+                exigir_sessao(request)
+            except HTTPException as erro:
+                return JSONResponse(status_code=erro.status_code, content={"detail": erro.detail})
+        return await proximo(request)
+
+    @app.exception_handler(RequestValidationError)
+    def erro_de_formato(request, erro):
+        # O erro padrão inclui "input", que pode conter a senha ou o corpo inteiro.
+        return JSONResponse(status_code=422, content={
+            "detail": "Dados de entrada inválidos. Confira os campos informados."
+        })
 
     @app.exception_handler(ValueError)
     def erro_de_regra(request, erro):
