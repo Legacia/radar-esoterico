@@ -6,12 +6,13 @@ import { PAGINAS, SECOES, enderecoDe, useRota } from "../rotas";
 import { Fornecedores } from "./Fornecedores";
 import { Calculadora } from "./Calculadora";
 import { Importar } from "./Importar";
+import { Kits } from "./Kits";
 import { Painel } from "./Painel";
 import { Pesquisa } from "./Pesquisa";
 import { Produtos } from "./Produtos";
 
 // Telas já migradas; as demais mostram o aviso de construção.
-const TELAS: Record<string, () => JSX.Element> = { painel: Painel, fornecedores: Fornecedores, produtos: Produtos, calculadora: Calculadora, pesquisa: Pesquisa, importar: Importar };
+const TELAS: Record<string, () => JSX.Element> = { painel: Painel, fornecedores: Fornecedores, produtos: Produtos, calculadora: Calculadora, pesquisa: Pesquisa, importar: Importar, kits: Kits };
 
 export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => Promise<void> }) {
   const rota = useRota();
