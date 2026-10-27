@@ -8,7 +8,7 @@ export type Executar = <T>(acao: () => Promise<T>) => Promise<T | undefined>;
 
 export function useGravacao() {
   const [ocupado, setOcupado] = useState(false);
-  // Conta as gravações terminadas: quem abriu dados durante uma gravação recarrega quando ela acaba.
+  // Conta as gravações concluídas com sucesso: quem abriu dados durante uma gravação recarrega quando ela acaba.
   const [concluidas, setConcluidas] = useState(0);
   const trava = useRef(false);
 
@@ -17,11 +17,13 @@ export function useGravacao() {
     trava.current = true;
     setOcupado(true);
     try {
-      return await acao();
+      const resultado = await acao();
+      // Só gravação bem-sucedida conta: uma rejeição mantém o formulário e a mensagem de erro.
+      setConcluidas((n) => n + 1);
+      return resultado;
     } finally {
       trava.current = false;
       setOcupado(false);
-      setConcluidas((n) => n + 1);
     }
   }, []);
 

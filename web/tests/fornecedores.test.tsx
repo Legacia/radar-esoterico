@@ -215,6 +215,25 @@ describe("Fornecedores", () => {
     await waitFor(() => expect(within(ficha).getByLabelText("Emite nota fiscal")).toBeChecked());
   });
 
+  it("rejeição da API mantém o que foi digitado e a explicação", async () => {
+    simular();
+    mostrar("#/fornecedores?ficha=1");
+    const ficha = await screen.findByRole("dialog", { name: "Fornecedor fictício Alfa" });
+    await userEvent.click(within(ficha).getByRole("tab", { name: "Condições e verificações" }));
+    await userEvent.clear(within(ficha).getByLabelText("CNPJ"));
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (entrada, init) => {
+      if (init?.method === "PUT") {
+        return new Response(JSON.stringify({ detail: "Informe o CNPJ antes de marcá-lo como verificado." }), { status: 400 });
+      }
+      return new Response(JSON.stringify(String(entrada) === "/api/fornecedores" ? LISTA : FICHA), { status: 200 });
+    });
+    await userEvent.click(within(ficha).getByRole("button", { name: "Salvar fornecedor" }));
+    expect(await within(ficha).findByRole("alert")).toHaveTextContent("Informe o CNPJ antes");
+    await new Promise((r) => setTimeout(r, 50));
+    expect(within(ficha).getByRole("alert")).toHaveTextContent("Informe o CNPJ antes");
+    expect(within(ficha).getByLabelText("CNPJ")).toHaveValue("");
+  });
+
   it("abas trocam com as setas do teclado", async () => {
     simular();
     mostrar("#/fornecedores?ficha=1");
