@@ -196,12 +196,13 @@ A API já pode ser iniciada para testes:
 - Sessão em cookie `HttpOnly` e `SameSite=Strict`, guardada no servidor, com até 8 horas desde a entrada. Sair e reiniciar o servidor encerram a sessão.
 - Não há bloqueio por senhas erradas (decisão do Legacia); a proteção é a senha, guardada só como hash Argon2id.
 - Dinheiro sai como texto decimal (`"55.56"`) ou centavos inteiros; percentuais como fração em texto.
-- Rotas desta etapa: `entrar`, `sair`, `eu`, `painel`, `configuracao` e `calculadora/simular`. As demais entram junto com cada tela React.
+- Rotas: `entrar`, `sair`, `eu`, `painel`, `configuracao`, `calculadora/simular`, `tarefas` (criar) e `tarefas/{id}` (alterar). As demais entram junto com cada tela React.
+- Dados em formato errado recebem 400 com mensagem em português.
 
 ## Interface React (migração, etapa 2)
 
 Estrutura pronta: entrada com e-mail e senha, barra lateral com as oito telas, tema e componentes comuns.
-As telas em si chegam na etapa 3; até lá, o uso continua pelo Streamlit.
+As telas chegam uma por vez na etapa 3. Já migrada: **Painel** (indicadores, pendências, funil e plano de 30 dias, com cadastro e conclusão de tarefas). As demais ainda são usadas pelo Streamlit.
 
 Para montar e ver no servidor (precisa do Node.js LTS só neste computador):
 

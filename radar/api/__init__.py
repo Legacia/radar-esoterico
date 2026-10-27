@@ -7,16 +7,17 @@ from decimal import Decimal
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictBool, StrictInt
 
 from radar.api.sessao import COOKIE, Sessoes, apagar_cookie, exigir_sessao, gravar_cookie
 from radar.banco import inicializar
 from radar.compras import obter_orcamento
 from radar.margem import calcular, preco_minimo
 from radar.margem.configuracao import obter_configuracao
-from radar.painel import obter_painel
+from radar.painel import obter_painel, salvar_tarefa
 from radar.usuarios import autenticar
 from radar.valores import dinheiro_texto
 
@@ -26,6 +27,13 @@ INTERFACE = Path(__file__).resolve().parents[2] / "web" / "dist"
 class Entrada(BaseModel):
     email: str
     senha: str
+
+
+class Tarefa(BaseModel):
+    titulo: str
+    semana: StrictInt
+    responsavel: str
+    concluida: StrictBool = False
 
 
 class Simulacao(BaseModel):
@@ -75,8 +83,21 @@ def eu(usuario: dict = Depends(exigir_sessao)):
 @protegido.get("/painel")
 def painel():
     dados = obter_painel()
-    dados["orcamento_total_centavos"] = obter_orcamento()["total_centavos"]
+    total = obter_orcamento()["total_centavos"]
+    dados["orcamento_total_centavos"] = total
+    # Fração do orçamento já comprometida, em texto decimal; a tela só formata.
+    dados["comprometido_pct"] = _texto(Decimal(dados["comprometido_centavos"]) / total) if total else None
     return dados
+
+
+@protegido.post("/tarefas")
+def criar_tarefa(dados: Tarefa):
+    return {"id": salvar_tarefa(dados.titulo, dados.semana, dados.responsavel, dados.concluida)}
+
+
+@protegido.put("/tarefas/{tarefa_id}")
+def alterar_tarefa(tarefa_id: int, dados: Tarefa):
+    return {"id": salvar_tarefa(dados.titulo, dados.semana, dados.responsavel, dados.concluida, tarefa_id)}
 
 
 @protegido.get("/configuracao")
@@ -108,6 +129,10 @@ def criar_app():
     def erro_de_regra(request, erro):
         # As regras de radar/ explicam o problema em português; a tela mostra a mensagem.
         return JSONResponse(status_code=400, content={"detail": str(erro)})
+
+    @app.exception_handler(RequestValidationError)
+    def formato_invalido(request, erro):
+        return JSONResponse(status_code=400, content={"detail": "Dados em formato inválido. Confira os campos."})
 
     app.include_router(publico)
     app.include_router(protegido)

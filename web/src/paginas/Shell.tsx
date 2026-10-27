@@ -1,8 +1,12 @@
 // Moldura das telas: barra lateral escura com marca, seções e saída; conteúdo à direita.
-import { useEffect, useState } from "react";
+import { useEffect, useState, type JSX } from "react";
 import type { Usuario } from "../api";
 import { Aviso, Cabecalho } from "../componentes/basicos";
 import { PAGINAS, SECOES, enderecoDe, useRota } from "../rotas";
+import { Painel } from "./Painel";
+
+// Telas já migradas; as demais mostram o aviso de construção.
+const TELAS: Record<string, () => JSX.Element> = { painel: Painel };
 
 export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => Promise<void> }) {
   const rota = useRota();
@@ -19,6 +23,7 @@ export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => Pro
     }
   }
   const pagina = PAGINAS.find((p) => p.chave === rota.pagina)!;
+  const Tela = TELAS[pagina.chave];
 
   useEffect(() => {
     document.title = `${pagina.titulo} · Radar Esotérico`;
@@ -66,9 +71,11 @@ export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => Pro
       <main id="conteudo" className="conteudo" tabIndex={-1}>
         {erroSaida && <Aviso tipo="erro">{erroSaida}</Aviso>}
         <Cabecalho titulo={pagina.titulo} descricao={pagina.descricao} />
-        <Aviso titulo="Tela em construção.">
-          Esta tela ainda funciona só na versão Streamlit. Ela chega aqui na etapa 3 da migração.
-        </Aviso>
+        {Tela ? <Tela /> : (
+          <Aviso titulo="Tela em construção.">
+            Esta tela ainda funciona só na versão Streamlit. Ela chega aqui na etapa 3 da migração.
+          </Aviso>
+        )}
       </main>
     </div>
   );
