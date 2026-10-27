@@ -1,9 +1,10 @@
 // Fornecedores: lista por etapa, ficha com checklist, condições, cotações e contatos.
 // Checklist, margens e promoção vêm da API; a tela nunca decide sozinha.
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { pedir } from "../api";
 import { Abas } from "../componentes/Abas";
 import { Aviso, Painel as Caixa, Selo, type Tom } from "../componentes/basicos";
+import { useFicha } from "../componentes/ficha";
 import { Gaveta } from "../componentes/Gaveta";
 import { mensagemDeErro, useGravacao, type Executar } from "../componentes/gravacao";
 import { useNotificar } from "../componentes/Notificacoes";
@@ -128,47 +129,10 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
   aoMudar: () => Promise<void>;
   aoFechar: () => void;
 }) {
-  const [ficha, setFicha] = useState<Ficha | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
-  const notificar = useNotificar();
-
-  // Cada recarga gera uma versão nova; os formulários usam a versão como chave e são recriados
-  // com os dados que acabaram de chegar, nunca com uma cópia anterior à gravação.
-  const [versao, setVersao] = useState(0);
+  const { ficha, erro, versao, bloqueado, gravar, recarregarTudo } = useFicha<Ficha>({
+    caminho: `/fornecedores/${id}`, id, executar, ocupado, gravacoes, aoMudar });
   // Pendências da última tentativa de promoção: ficam aqui fora para sobreviver à recarga da ficha.
   const [faltam, setFaltam] = useState<string[] | null>(null);
-  // Cada consulta recebe um número; só a resposta da mais recente entra na tela. Assim uma
-  // resposta atrasada (do mesmo ou de outro fornecedor) nunca substitui dados mais novos.
-  const ultimaConsulta = useRef(0);
-  const carregar = useCallback(() => {
-    const consulta = ++ultimaConsulta.current;
-    return pedir<Ficha>(`/fornecedores/${id}`).then(
-      (f) => {
-        if (consulta !== ultimaConsulta.current || f.id !== id) return;
-        setFicha(f); setVersao((v) => v + 1); setErro(null);
-      },
-      (e) => { if (consulta === ultimaConsulta.current) setErro(mensagemDeErro(e)); });
-  }, [id]);
-  useEffect(() => { setFicha(null); carregar(); }, [carregar]);
-  // Ficha aberta enquanto outra gravação corria: fica travada até ela acabar e, se deu certo,
-  // até buscar de novo os dados salvos. A ficha que gravou já recarrega dentro da própria gravação.
-  const abertaDuranteGravacao = useRef(ocupado);
-  const gravacoesNaAbertura = useRef(gravacoes);
-  const [atualizando, setAtualizando] = useState(ocupado);
-  useEffect(() => {
-    if (ocupado || !abertaDuranteGravacao.current) return;
-    abertaDuranteGravacao.current = false;
-    if (gravacoes === gravacoesNaAbertura.current) setAtualizando(false);
-    else carregar().finally(() => setAtualizando(false));
-  }, [ocupado, gravacoes, carregar]);
-  const bloqueado = ocupado || atualizando;
-
-  // Grava, recarrega ficha e lista, e só então libera a trava.
-  const gravar = (acao: () => Promise<unknown>, sucesso: string) => executar(async () => {
-    await acao();
-    notificar(sucesso);
-    await Promise.all([carregar(), aoMudar()]);
-  });
 
   return (
     <Gaveta aberta larga titulo={ficha?.nome ?? "Ficha do fornecedor"} aoFechar={aoFechar}>
@@ -178,7 +142,7 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
         <div className="pilha">
           <Cabecalho ficha={ficha} />
           <Abas rotulo="Partes da ficha" abas={[
-            { titulo: "Checklist e etapa", conteudo: <Checklist key={versao} ficha={ficha} faltam={faltam} setFaltam={setFaltam} etapas={etapas} ocupado={bloqueado} gravar={gravar} executar={executar} aoMudar={() => Promise.all([carregar(), aoMudar()]).then(() => {})} /> },
+            { titulo: "Checklist e etapa", conteudo: <Checklist key={versao} ficha={ficha} faltam={faltam} setFaltam={setFaltam} etapas={etapas} ocupado={bloqueado} gravar={gravar} executar={executar} aoMudar={recarregarTudo} /> },
             { titulo: "Condições e verificações", conteudo: (
               <FormularioFornecedor key={versao} ficha={ficha} ocupado={bloqueado}
                 aoEnviar={(dados) => gravar(() => pedir(`/fornecedores/${id}`, { metodo: "PUT", corpo: dados }), "Fornecedor salvo.")} />
