@@ -66,3 +66,17 @@ def test_arquivo_grande_demais(cliente, monkeypatch):
     monkeypatch.setattr(rota, "LIMITE_BYTES", 10)
     r = enviar(cliente, CABECALHO.encode())
     assert r.status_code == 400 and "limite é 5 MB" in r.json()["detail"]
+
+
+def test_importacao_roda_fora_do_laco_assincrono(cliente, monkeypatch):
+    import threading
+    threads = []
+
+    def falso(conteudo):
+        threads.append(threading.current_thread().name)
+        return type("R", (), {"importadas": 0, "repetidas": 0, "erros": []})()
+
+    monkeypatch.setattr(rota, "importar_csv", falso)
+    assert enviar(cliente, CABECALHO.encode()).status_code == 200
+    # A rota é assíncrona; a importação precisa sair da thread do laço para uma thread de trabalho.
+    assert threads and "AnyIO worker thread" in threads[0]
