@@ -150,3 +150,20 @@ def test_campo_com_multiplas_linhas_e_erro_recuperavel_preserva_as_demais(db):
     r = importar_csv(conteudo,db)
     assert r.importadas == 2
     assert r.erros[0]["linha"] == 4
+
+
+def test_mesmo_dia_vale_o_ultimo_preco_novo_e_repetido_nao_volta_a_valer(db):
+    _, produto, cotacao = criar_base(db)
+    preco = lambda valor: linha(preco=valor, produto="Produto fictício A")
+    relatorio = importar_csv(CABECALHO + preco("10,00") + preco("12,00"), db)
+    assert (relatorio.importadas, relatorio.repetidas, relatorio.erros) == (2, 0, [])
+    r = pesquisar(produto, cotacao, caminho=db)
+    assert [l["preco"] for l in r["linhas"]] == [D("12.00")]
+    assert len(r["historico"]) == 2
+    # Comportamento atual, mantido de propósito: um preço já visto no mesmo dia conta como
+    # repetido e não volta a valer, mesmo que seja o último importado.
+    relatorio = importar_csv(CABECALHO + preco("10,00"), db)
+    assert (relatorio.importadas, relatorio.repetidas) == (0, 1)
+    r = pesquisar(produto, cotacao, caminho=db)
+    assert [l["preco"] for l in r["linhas"]] == [D("12.00")]
+    assert len(r["historico"]) == 2

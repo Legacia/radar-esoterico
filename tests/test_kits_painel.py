@@ -138,3 +138,16 @@ def test_painel_conta_prontos_comprometido_funil_e_tarefas(db):
 def test_semana_tarefa_invalida(db,semana):
     with pytest.raises(ValueError):
         salvar_tarefa("Fictícia",semana,"Anna",caminho=db)
+
+
+def test_pendencia_de_margem_respeita_piso_de_20_por_cento_com_alvo_menor(db):
+    # Com alvo configurado em 15%, uma margem de ~17,2% ainda reprova promoção e compra
+    # (piso de 20%); o painel precisa avisar do mesmo jeito.
+    from dataclasses import replace
+    from radar.margem.configuracao import salvar_configuracao
+    fornecedor,produto,_ = criar_base(db)
+    config = obter_configuracao(db)
+    salvar_configuracao(replace(config.parametros, margem_alvo_pct=D("0.15")), config.limite_cotacao_dias, db)
+    registrar_cotacao(fornecedor,produto,"FICTICIO-A",D(24),1,date.today(),D("59.90"),db)
+    pendencias = obter_painel(db,date.today())["pendencias"]
+    assert [p["tipo"] for p in pendencias] == ["Margem abaixo do alvo"]
