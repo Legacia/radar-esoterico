@@ -92,6 +92,36 @@ describe("Kits", () => {
     await waitFor(() => expect(within(screen.getByRole("region", { name: "Adicionar ou atualizar componente" })).getByLabelText("Componente")).toHaveValue("6"));
   });
 
+  it("campo de estoque mostra o valor salvo mesmo se a lista de produtos chegar depois da ficha", async () => {
+    let salvo = false;
+    let liberarLista!: () => void;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (entrada, init) => {
+      const caminho = String(entrada);
+      const metodo = init?.method ?? "GET";
+      if (metodo === "PUT") { salvo = true; return new Response(JSON.stringify({ ok: true }), { status: 200 }); }
+      if (caminho === "/api/kits") {
+        if (salvo) await new Promise<void>((r) => { liberarLista = r; });
+        const produtos = BASE.produtos.map((p) => (p.id === 5 && salvo ? { ...p, estoque_atual: 12 } : p));
+        return new Response(JSON.stringify({ ...BASE, produtos }), { status: 200 });
+      }
+      if (caminho.startsWith("/api/pesquisa/cotacoes")) return new Response(JSON.stringify(COTACOES["5"]), { status: 200 });
+      return new Response(JSON.stringify(KIT), { status: 200 });
+    });
+    mostrar();
+    const caixa = await screen.findByRole("region", { name: "Adicionar ou atualizar componente" });
+    const campo = () => within(screen.getByRole("region", { name: "Adicionar ou atualizar componente" })).getByLabelText("Estoque físico atual do componente");
+    expect(within(caixa).getByLabelText("Estoque físico atual do componente")).toHaveValue("25");
+    await userEvent.clear(campo());
+    await userEvent.type(campo(), "12");
+    await userEvent.click(within(caixa).getByRole("button", { name: "Atualizar estoque físico" }));
+    await waitFor(() => expect(liberarLista).toBeDefined());
+    liberarLista();
+    await screen.findByText("Estoque atualizado por produto.");
+    await waitFor(() => expect(campo()).toHaveValue("12"));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(campo()).toHaveValue("12");
+  });
+
   it("quantidades que não são inteiras são recusadas antes de enviar", async () => {
     const chamadas = simular();
     mostrar();

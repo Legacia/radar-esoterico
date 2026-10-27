@@ -33,8 +33,11 @@ export function Kits() {
   const gravacao = useGravacao();
   const notificar = useNotificar();
 
+  // Cada lista nova gera uma versão: o formulário de componente é recriado também quando o estoque
+  // dos produtos chega, não só quando chega a ficha do kit (as duas consultas correm em paralelo).
+  const [versaoBase, setVersaoBase] = useState(0);
   const carregar = useCallback(() => pedir<Base>("/kits").then(
-    (d) => { setBase(d); setErro(null); }, (e) => setErro(mensagemDeErro(e))), []);
+    (d) => { setBase(d); setVersaoBase((v) => v + 1); setErro(null); }, (e) => setErro(mensagemDeErro(e))), []);
   useEffect(() => { carregar(); }, [carregar]);
 
   if (erro) return <Aviso tipo="erro">{erro}</Aviso>;
@@ -67,7 +70,7 @@ export function Kits() {
       {kitId === undefined ? (
         <Aviso>Crie um kit para compor seus produtos.</Aviso>
       ) : (
-        <DetalheKit key={kitId} id={kitId} produtos={base.produtos} executar={gravacao.executar} ocupado={gravacao.ocupado}
+        <DetalheKit key={kitId} id={kitId} produtos={base.produtos} versaoBase={versaoBase} executar={gravacao.executar} ocupado={gravacao.ocupado}
           gravacoes={gravacao.concluidas} aoMudar={carregar} />
       )}
 
@@ -110,8 +113,9 @@ function FormularioNome({ ocupado, aoEnviar }: { ocupado: boolean; aoEnviar: (no
   );
 }
 
-function DetalheKit({ id, produtos, executar, ocupado, gravacoes, aoMudar }: {
+function DetalheKit({ id, produtos, versaoBase, executar, ocupado, gravacoes, aoMudar }: {
   id: number;
+  versaoBase: number;
   produtos: ProdutoEstoque[];
   executar: Executar;
   ocupado: boolean;
@@ -164,7 +168,7 @@ function DetalheKit({ id, produtos, executar, ocupado, gravacoes, aoMudar }: {
             aoEnviar={(dados) => gravar(() => pedir(`/kits/${id}`, { metodo: "PUT", corpo: dados }), "Plano do kit salvo.")} />
         </Caixa>
         <Caixa titulo="Adicionar ou atualizar componente">
-          <FormularioComponente key={versao} produtos={produtos} ocupado={bloqueado}
+          <FormularioComponente key={`${versao}-${versaoBase}`} produtos={produtos} ocupado={bloqueado}
             produtoInicial={componente} aoEscolher={setComponente}
             aoSalvar={(produtoId, dados) => gravar(() => pedir(`/kits/${id}/componentes/${produtoId}`, { metodo: "PUT", corpo: dados }), "Componente salvo.")}
             aoAjustarEstoque={(produtoId, estoque) => gravar(() => pedir(`/estoque/${produtoId}`, { metodo: "PUT", corpo: { estoque } }), "Estoque atualizado por produto.")} />
