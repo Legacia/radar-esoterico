@@ -194,7 +194,7 @@ A API já pode ser iniciada para testes:
 
 - Rotas em `/api`. Só `POST /api/entrar` funciona sem sessão; todas as outras respondem 401 sem login.
 - Sessão em cookie `HttpOnly` e `SameSite=Strict`, guardada no servidor, com até 8 horas desde a entrada. Sair e reiniciar o servidor encerram a sessão.
-- Após cinco falhas do mesmo IP em uma janela de cinco minutos, novas senhas incorretas recebem 429 até as falhas saírem dessa janela. **A senha correta continua permitindo a entrada e limpa o contador**, conforme decisão do Legacia nesta revisão.
+- Não há bloqueio por senhas erradas (decisão do Legacia); a proteção é a senha, guardada só como hash Argon2id.
 - A proteção cobre o namespace /api também quando a interface estática existe. Os arquivos de login da interface continuam públicos; dados da API exigem sessão.
 - Erros de formato recebem mensagem genérica em português, sem repetir a senha ou o corpo enviado.
 - Dinheiro sai como texto decimal (`"55.56"`) ou centavos inteiros; percentuais como fração em texto.

@@ -12,7 +12,6 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from radar.api.limite import LimiteTentativas
 from radar.api.sessao import COOKIE, Sessoes, apagar_cookie, exigir_sessao, gravar_cookie
 from radar.banco import inicializar
 from radar.compras import obter_orcamento
@@ -63,14 +62,10 @@ protegido = APIRouter(prefix="/api", dependencies=[Depends(exigir_sessao)])
 
 @publico.post("/entrar")
 def entrar(dados: Entrada, request: Request, response: Response):
-    limite = request.app.state.limite
-    origem = request.client.host if request.client else "desconhecido"
+    # Sem bloqueio por tentativas erradas (decisão do Legacia em 27/10/2026).
     usuario = autenticar(dados.email, dados.senha)
     if usuario is None:
-        if not limite.falhou(origem):
-            raise HTTPException(status_code=429, detail="Muitas tentativas. Aguarde alguns minutos e tente de novo.")
         raise HTTPException(status_code=401, detail="E-mail ou senha inválidos.")
-    limite.acertou(origem)
     sessoes = request.app.state.sessoes
     # Uma sessão nova a cada entrada; a anterior deste navegador deixa de valer.
     sessoes.fechar(request.cookies.get(COOKIE))
@@ -121,7 +116,6 @@ def criar_app():
     # Sem /docs nem /openapi.json: o Radar não publica a lista de rotas.
     app = FastAPI(title="Radar Esotérico", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.sessoes = Sessoes()
-    app.state.limite = LimiteTentativas()
 
     @app.middleware("http")
     async def proteger_namespace_api(request, proximo):

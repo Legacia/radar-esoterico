@@ -15,7 +15,6 @@ import pytest
 
 import radar.api as api
 import radar.usuarios as usuarios
-from radar.api.limite import JANELA_SEGUNDOS, MAXIMO_FALHAS, LimiteTentativas
 from radar.api.sessao import COOKIE, Sessoes
 from radar.margem.configuracao import obter_configuracao, salvar_configuracao
 from tests.test_api import rotas_da_api
@@ -33,16 +32,6 @@ def cliente(db, conta, tmp_path, monkeypatch):
 
 def entrar(cliente, **alteracoes):
     return cliente.post("/api/entrar", json={"email": EMAIL, "senha": SENHA, **alteracoes})
-
-
-def test_senha_correta_entra_mesmo_apos_cinco_falhas(cliente):
-    for _ in range(MAXIMO_FALHAS):
-        assert entrar(cliente, senha="incorreta-ficticia").status_code == 401
-    assert entrar(cliente, senha="incorreta-ficticia").status_code == 429
-    assert entrar(cliente).status_code == 200
-    assert cliente.get("/api/eu").status_code == 200
-    # O acerto limpa o contador: uma nova falha não herda o bloqueio.
-    assert entrar(cliente, senha="incorreta-ficticia").status_code == 401
 
 
 @pytest.mark.parametrize("corpo", [{"senha": SENHA}, {"email": {"senha": SENHA}, "senha": SENHA}])
@@ -126,28 +115,7 @@ def test_verificacao_argon_e_equivalente_para_email_ausente_e_senha_errada(clien
     assert extract_parameters(hashes[0]) == extract_parameters(hashes[1])
 
 
-def test_bloqueio_expira_na_janela_e_isola_ips():
-    agora = [0]
-    limite = LimiteTentativas(relogio=lambda: agora[0])
-    for _ in range(MAXIMO_FALHAS):
-        limite.falhou("ip-ficticio-a")
-    assert limite.bloqueado("ip-ficticio-a")
-    assert not limite.bloqueado("ip-ficticio-b")
-    agora[0] = JANELA_SEGUNDOS - 1
-    assert limite.bloqueado("ip-ficticio-a")
-    agora[0] = JANELA_SEGUNDOS
-    assert not limite.bloqueado("ip-ficticio-a")
-
-
-def test_respostas_concorrentes_respeitam_cinco_falhas_atomicamente():
-    limite = LimiteTentativas(relogio=lambda: 0)
-    with ThreadPoolExecutor(max_workers=8) as executor:
-        aceitas = list(executor.map(lambda _: limite.falhou("ip-ficticio"), range(24)))
-    assert aceitas.count(True) == MAXIMO_FALHAS
-    assert aceitas.count(False) == 24 - MAXIMO_FALHAS
-
-
-def test_pedidos_concorrentes_na_api_nao_ultrapassam_cinco_falhas(cliente, monkeypatch):
+def test_pedidos_concorrentes_incorretos_nao_criam_bloqueio(cliente, monkeypatch):
     barreira = Barrier(8)
 
     def autenticar_ficticio(email, senha):
@@ -162,16 +130,10 @@ def test_pedidos_concorrentes_na_api_nao_ultrapassam_cinco_falhas(cliente, monke
 
     with ThreadPoolExecutor(max_workers=8) as executor:
         respostas = list(executor.map(tentar, range(8)))
-    assert respostas.count(401) == MAXIMO_FALHAS
-    assert respostas.count(429) == 8 - MAXIMO_FALHAS
-
-
-def test_bloqueio_na_api_nao_e_compartilhado_com_outro_ip(cliente):
-    for _ in range(MAXIMO_FALHAS):
-        entrar(cliente, senha="incorreta-ficticia")
-    assert entrar(cliente, senha="incorreta-ficticia").status_code == 429
-    with TestClient(cliente.app, client=("192.0.2.20", 50000)) as outro:
-        assert entrar(outro, senha="incorreta-ficticia").status_code == 401
+    assert respostas == [401] * 8
+    # Depois das falhas simultâneas, autenticação válida continua funcionando.
+    monkeypatch.setattr(api, "autenticar", usuarios.autenticar)
+    assert entrar(cliente).status_code == 200
 
 
 def test_cookie_tem_todas_as_flags_e_nao_e_renovado_no_uso(cliente):

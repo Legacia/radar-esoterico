@@ -6,7 +6,6 @@ import pytest
 
 import radar.sessoes as sessoes
 from radar.api import criar_app
-from radar.api.limite import MAXIMO_FALHAS
 from radar.api.sessao import COOKIE
 from radar.painel import salvar_tarefa
 
@@ -106,13 +105,10 @@ def test_sessao_expira_em_oito_horas_sem_prorrogar(cliente, monkeypatch):
     assert cliente.get("/api/eu").status_code == 401
 
 
-def test_limite_de_tentativas_erradas(cliente):
-    for _ in range(MAXIMO_FALHAS):
+def test_senhas_erradas_nao_bloqueiam_o_login(cliente):
+    # Decisão do Legacia em 27/10/2026: sem bloqueio por tentativas erradas.
+    for _ in range(10):
         assert entrar(cliente, senha="errada-123456").status_code == 401
-    bloqueado = entrar(cliente, senha="errada-123456")
-    assert bloqueado.status_code == 429
-    assert "set-cookie" not in bloqueado.headers
-    # Decisão do Legacia na revisão: a senha correta continua podendo entrar.
     assert entrar(cliente).status_code == 200
 
 
