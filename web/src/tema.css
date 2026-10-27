@@ -210,3 +210,7 @@ input, select, textarea { font: inherit; border: 1px solid var(--borda); border-
 .campo-com-botao input { flex: 1; min-width: 0; }
 .codigo { background: var(--cinza-fundo); border-radius: var(--raio); padding: 0.6rem 0.8rem; overflow-x: auto; font-size: 0.85rem; }
 .em-linha { display: flex; align-items: center; gap: 0.5rem; font-weight: 500; }
+.cartao { border: 1px solid var(--borda); border-radius: 8px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.cartao-topo { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+.cartao-acoes { display: flex; gap: 0.4rem; }
+.cartao .fatos { margin: 0; }
