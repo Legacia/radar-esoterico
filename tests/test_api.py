@@ -144,3 +144,45 @@ def test_painel_reconcilia_com_as_regras(cliente, db):
 def test_api_nao_publica_lista_de_rotas(cliente):
     for caminho in ("/docs", "/redoc", "/openapi.json"):
         assert cliente.get(caminho).status_code == 404
+
+
+def test_painel_traz_fracao_comprometida_do_orcamento(cliente):
+    entrar(cliente)
+    r = cliente.get("/api/painel").json()
+    assert r["comprometido_centavos"] == 0
+    assert Decimal(r["comprometido_pct"]) == 0
+
+
+def test_criar_e_concluir_tarefa(cliente):
+    entrar(cliente)
+    criada = cliente.post("/api/tarefas", json={"titulo": "Pedir amostra fictícia", "semana": 2, "responsavel": "Anna"})
+    assert criada.status_code == 200
+    tarefa_id = criada.json()["id"]
+    alterada = cliente.put(f"/api/tarefas/{tarefa_id}", json={
+        "titulo": "Pedir amostra fictícia", "semana": 2, "responsavel": "Anna", "concluida": True})
+    assert alterada.status_code == 200
+    painel = cliente.get("/api/painel").json()
+    assert painel["concluidas"] == 1
+    assert painel["tarefas"][0]["titulo"] == "Pedir amostra fictícia"
+
+
+@pytest.mark.parametrize("dados, mensagem", [
+    ({"titulo": " ", "semana": 1, "responsavel": "Anna"}, "título"),
+    ({"titulo": "T", "semana": 5, "responsavel": "Anna"}, "semana"),
+    ({"titulo": "T", "semana": 1, "responsavel": ""}, "responsável"),
+    ({"titulo": "T", "semana": "2", "responsavel": "Anna"}, "formato inválido"),
+    ({"titulo": "T", "semana": True, "responsavel": "Anna"}, "formato inválido"),
+    ({"titulo": "T", "responsavel": "Anna"}, "formato inválido"),
+])
+def test_tarefa_invalida_explica_em_portugues(cliente, dados, mensagem):
+    entrar(cliente)
+    resposta = cliente.post("/api/tarefas", json=dados)
+    assert resposta.status_code == 400
+    assert mensagem in resposta.json()["detail"].lower()
+
+
+def test_alterar_tarefa_inexistente(cliente):
+    entrar(cliente)
+    resposta = cliente.put("/api/tarefas/999", json={"titulo": "T", "semana": 1, "responsavel": "Anna"})
+    assert resposta.status_code == 400
+    assert resposta.json()["detail"] == "Tarefa não encontrada."

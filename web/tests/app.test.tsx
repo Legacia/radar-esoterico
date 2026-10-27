@@ -5,13 +5,20 @@ import { App } from "../src/App";
 
 type Resposta = { status: number; corpo: unknown };
 
+// Painel vazio para os testes que entram e caem na tela inicial.
+const PADRAO: Record<string, Resposta> = {
+  "/api/painel": { status: 200, corpo: {
+    fornecedores_ativos: 0, candidatos: 0, prontos: 0, comprometido_centavos: 0, comprometido_pct: "0",
+    orcamento_total_centavos: 100000, tarefas: [], concluidas: 0, funil: [], pendencias: [] } },
+};
+
 /** Simula a API: cada chamada consome a próxima resposta da lista para aquele caminho. */
 function simularApi(respostas: Record<string, Resposta[]>) {
   const chamadas: { caminho: string; init?: RequestInit }[] = [];
   vi.spyOn(globalThis, "fetch").mockImplementation(async (entrada, init) => {
     const caminho = String(entrada);
     chamadas.push({ caminho, init });
-    const resposta = respostas[caminho]?.shift() ?? { status: 404, corpo: { detail: "Não encontrado." } };
+    const resposta = respostas[caminho]?.shift() ?? PADRAO[caminho] ?? { status: 404, corpo: { detail: "Não encontrado." } };
     return new Response(JSON.stringify(resposta.corpo), { status: resposta.status });
   });
   return chamadas;

@@ -148,3 +148,33 @@ input, select, textarea { font: inherit; border: 1px solid var(--borda); border-
   .lateral.aberta nav, .lateral.aberta .lateral-pe { display: block; }
   .conteudo { padding: 1.2rem 1rem 3rem; }
 }
+
+/* Grades e listas das telas */
+.grade-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.9rem; }
+.grade-2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.2rem; align-items: start; }
+.pilha { display: flex; flex-direction: column; gap: 0.8rem; }
+.subtitulo { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.4rem; }
+.legenda-inline { color: var(--texto-suave); font-size: 0.85rem; }
+.selo-link { text-decoration: none; }
+.lista-pendencias, .lista-tarefas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+.tarefa { display: flex; gap: 0.5rem; align-items: flex-start; cursor: pointer; font-weight: 400; }
+.formulario label.tarefa { flex-direction: row; }
+.tarefa input { margin-top: 0.2rem; }
+.tarefa-pe { display: flex; gap: 0.6rem; align-items: center; padding-left: 1.6rem; }
+.riscado { text-decoration: line-through; color: var(--texto-suave); }
+.link { color: var(--link); font-size: 0.85rem; }
+.semanas { margin-top: 1rem; }
+.progresso-rotulo { font-size: 0.85rem; color: var(--texto-suave); margin-bottom: 0.3rem; }
+.progresso { width: 100%; height: 10px; accent-color: var(--principal); }
+.grafico { width: 100%; max-width: 520px; height: auto; display: block; }
+.grafico a:focus-visible rect { stroke: var(--link); stroke-width: 2; }
+.grafico-rotulo { font-size: 12px; fill: var(--texto); }
+.grafico-valor { font-size: 12px; fill: var(--texto-suave); font-variant-numeric: tabular-nums; }
+.alternativa { margin-top: 0.6rem; }
+.alternativa summary { cursor: pointer; color: var(--link); margin-bottom: 0.5rem; }
+
+@media (max-width: 1100px) {
+  .grade-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grade-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) { .grade-4 { grid-template-columns: 1fr; } }
