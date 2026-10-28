@@ -5,6 +5,7 @@ Dinheiro sai como texto decimal ("14.33") ou centavos inteiros; percentuais como
 """
 from decimal import Decimal
 from pathlib import Path
+from posixpath import normpath
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -23,6 +24,19 @@ from radar.valores import decimal_texto, dinheiro_texto, texto_decimal
 
 CENTAVO = Decimal("0.01")
 INTERFACE = Path(__file__).resolve().parents[2] / "web" / "dist"
+
+
+class InterfaceEstatica(StaticFiles):
+    """Arquivos da interface montada; nenhum deles pode responder no lugar de uma rota da API."""
+
+    def lookup_path(self, path):
+        arquivo, informacao = super().lookup_path(path)
+        if informacao is not None:
+            relativo = Path(arquivo).relative_to(Path(self.directory).resolve())
+            # No Windows, "API", "api." e "api " podem apontar para o mesmo diretório.
+            if relativo.parts and relativo.parts[0].rstrip(" .").casefold() == "api":
+                raise HTTPException(status_code=404, detail="Não encontrado.")
+        return arquivo, informacao
 
 
 class Entrada(BaseModel):
@@ -156,6 +170,20 @@ def criar_app():
     app = FastAPI(title="Radar Esotérico", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.sessoes = Sessoes()
 
+    @app.middleware("http")
+    async def proteger_namespace_api(request, proximo):
+        # Segunda barreira, além da dependência do roteador protegido: qualquer caminho que, depois
+        # de normalizado (pontos, %2e, barras invertidas do Windows), caia em /api exige sessão.
+        # Só POST /api/entrar é público. Vale também para rotas montadas no futuro fora dos roteadores.
+        caminho = normpath("/" + request.scope["path"].replace("\\", "/").lstrip("/"))
+        entrada = request.method == "POST" and request.scope["path"] == "/api/entrar"
+        if (caminho == "/api" or caminho.startswith("/api/")) and not entrada:
+            try:
+                exigir_sessao(request)
+            except HTTPException as erro:
+                return JSONResponse(status_code=erro.status_code, content={"detail": erro.detail})
+        return await proximo(request)
+
     @app.exception_handler(ValueError)
     def erro_de_regra(request, erro):
         # As regras de radar/ explicam o problema em português; a tela mostra a mensagem.
@@ -168,5 +196,5 @@ def criar_app():
     app.include_router(publico)
     app.include_router(protegido)
     if INTERFACE.is_dir():
-        app.mount("/", StaticFiles(directory=INTERFACE, html=True), name="interface")
+        app.mount("/", InterfaceEstatica(directory=INTERFACE, html=True), name="interface")
     return app
