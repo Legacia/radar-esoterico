@@ -235,19 +235,21 @@ Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Lega
 - Mensagens de commit curtas, em português, dizendo o que mudou.
 - As tarefas do plano de 30 dias viram Issues no GitHub, com responsável e semana.
 
-## Comandos (a confirmar quando o projeto existir)
+## Comandos
 
 ```
 python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-cd web; npm install; npm run build; cd ..
-python -m radar.servidor          # sobe API + interface em http://localhost:8501
-pytest
-cd web; npm test                  # testes da interface
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+cd web; npm.cmd ci; npm.cmd run build; cd ..
+.venv\Scripts\python.exe -m radar.servidor     # sobe API + interface em http://localhost:8501
+.venv\Scripts\python.exe -m pytest              # regras e API
+cd web; npm.cmd test                             # telas React
+cd web; npm.cmd run build; npm.cmd run e2e       # ponta a ponta (Playwright, banco temporário)
 ```
 
-Desenvolvimento da interface: `npm run dev` dentro de `web/` (Vite com recarga automática, apontando para a API local). Node.js LTS é necessário só para montar e testar a interface; quem apenas usa o Radar no outro computador precisa só do navegador.
+No PowerShell, `npm.cmd` e `npx.cmd` em vez de `npm` e `npx` (o PowerShell bloqueia o atalho `.ps1` por padrão; não mudar a política de segurança do Windows para isso).
+
+Desenvolvimento da interface: `npm.cmd run dev` dentro de `web/` (Vite com recarga automática, apontando para a API local). Node.js LTS é necessário só para montar e testar a interface; quem apenas usa o Radar no outro computador precisa só do navegador.
 
 No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 
@@ -262,7 +264,7 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 - `radar/banco/esquema.py` contém as migrações; `PRAGMA user_version` controla a versão (inicial: 1). Dinheiro usa colunas `*_centavos` inteiras; percentuais usam texto decimal para futura leitura por `Decimal`.
 - `tarefa` guarda `id`, `titulo`, `semana` (1 a 4), `responsavel` e `concluida` (0 ou 1), para o painel do Bloco 3.
 - `fornecedor` inclui os campos de verificação `cnpj_verificado`, `condicoes_verificadas`, `emite_nota`, `amostra_avaliada` e `reposicao_confirmada`; `produto` inclui `especificacoes_conferidas`, `procedencia_conferida` e `qualidade_conferida`. São registros para as regras dos próximos blocos, ainda sem promoção ou decisão de compra.
-- `radar/usuarios.py` gerencia contas e autenticação; `radar/sessoes.py` controla a duração da sessão. `app/acesso.py` concentra a barreira de login; `app/painel.py` a aplica também diretamente na página.
+- `radar/usuarios.py` gerencia contas e autenticação; `radar/sessoes.py` controla a duração da sessão. A barreira de login, hoje, é a dependência `exigir_sessao` do roteador protegido em `radar/api/` (na primeira versão, em Streamlit, ficava em `app/`, retirada na etapa 5 da migração).
 - `radar/conectores/base.py` define somente o contrato opcional de marketplace; não há implementação de coleta.
 
 ## Estrutura e esquema implementados no Bloco 2
@@ -270,14 +272,14 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 - Migração 2 acrescenta `sku_fornecedor.preco_venda_centavos` (opcional): preço conservador informado manualmente para estimar margem, sem se confundir com os preços observados do Bloco 3. Histórico de cotações preservado; a cotação atual é a mais recente por fornecedor e código (sem diferenciar maiúsculas), com desempate por id.
 - Nova tabela `configuracao`, com uma linha compartilhada: comissão, tributo e margem-alvo como frações em texto decimal; tarifa fixa, embalagem e outros em centavos inteiros; limite de cotação antiga em dias. Valores iniciais ficam em `radar/margem/padroes.toml`; edição pela tela, sem modificar fórmulas.
 - `radar/margem/` implementa fórmulas e configuração; `radar/fornecedores/regras.py` o checklist puro; `radar/fornecedores/__init__.py` as ações persistidas; `radar/produtos.py` catálogo e cotações; `radar/valores.py` validação e apresentação de valores/datas.
-- Novas telas protegidas: `app/fornecedores.py`, `app/catalogo.py`, `app/calculadora.py`. Componentes comuns de apresentação em `app/componentes.py`.
+- Telas (hoje em React, `web/src/paginas/`): Fornecedores, Produtos e SKUs e Calculadora.
 
 ## Estrutura e esquema implementados no Bloco 3
 
 - Migração 3 preserva as anteriores. Novas tabelas: `orcamento` (linha única, total e reserva em centavos) e `plano_compra` (uma linha por produto, cotação escolhida, quantidade, preço conservador e confirmações/justificativas de demanda e concorrência).
 - `produto` recebe `validado`, `justificativa_validacao` e `estoque_atual` por componente; validação é manual e exige justificativa, conforme decisão do Legacia nesta conversa. `interacao.situacao_resposta` opcional distingue aguardando/recebida; dados antigos ficam sem classificação.
 - `kit_item.sku_fornecedor_id` registra a cotação de custo do componente; `kit.quantidade_planejada` permite somar necessidades de componentes compartilhados sem baixa automática de estoque.
-- Novos módulos de negócio: `radar/mercado.py`, `radar/compras.py`, `radar/kits.py`, `radar/painel.py` e importador em `radar/importacao/`. Telas protegidas em `app/pesquisa.py`, `app/importar.py`, `app/compras.py`, `app/kits.py`; `app/painel.py` passa a mostrar os indicadores, tarefas e pendências.
+- Novos módulos de negócio: `radar/mercado.py`, `radar/compras.py`, `radar/kits.py`, `radar/painel.py` e importador em `radar/importacao/`. Telas (hoje em React): Pesquisa, Importar, Decisão de compra e Kits; o Painel mostra indicadores, tarefas e pendências.
 - Único CSV de exemplo: `exemplos/anuncios_ficticios.csv`, sem informação real. Formato e decisões confirmadas sobre critérios de compra, estoque e pendências estão documentados no README.
 
 ## Interface (revisão visual de 27/10/2026)
@@ -285,14 +287,14 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 - Primeira decisão (manhã de 27/10/2026): manter o Streamlit com o visual da referência. **Substituída no mesmo dia**: o Legacia decidiu migrar para React antes do início do uso real. O visual abaixo continua sendo o padrão e passa a ser aplicado no React.
 - Referência: projeto ERT Engagement Monitor (shell com barra lateral escura, painéis, selos, gavetas laterais para detalhes, tabelas ordenáveis, gráficos clicáveis com tabela alternativa, filtros no endereço `#/pagina?filtro=valor`). Textos da interface em português do Brasil.
 - Tokens de cor (em CSS no React): fundo `#f3f5f8`, painéis brancos, barra lateral escura `#19222e`, cor principal `#24406f`, fonte IBM Plex Sans (com Segoe UI de reserva, se não houver internet) e cores de selo (verde cumprido, laranja pendente, vermelho crítico, amarelo atenção, cinza neutro).
-- Na versão Streamlit, `app/componentes.py` e `app/navegacao.py` implementaram esse padrão; servem de referência até a interface React substituir a pasta `app/`.
+- O padrão está implementado em `web/src/tema.css` e nos componentes comuns de `web/src/componentes/` (painel, selo, tabela ordenável, gaveta, abas, aviso, notificação, trava de gravação e carregamento seguro de ficha).
 - Sem biblioteca de componentes visuais pronta (estilo próprio, como na referência). Acessibilidade: foco visível pelo teclado, Esc fecha gavetas, gráficos com `aria-label` e tabela alternativa.
 - Navegação agrupada em seções: Visão geral, Fornecimento, Mercado e Decisão.
 - Pesquisa de oportunidades é **simulação livre** (decisão do Legacia em 27/10/2026): usa a margem-alvo configurada, mesmo abaixo de 20%. Promoção de fornecedor, decisão de compra e pendências do Painel continuam exigindo o piso de 20%.
 
-## Migração para React (decisão de 27/10/2026)
+## Migração para React (decisão de 27/10/2026, concluída em 28/10/2026)
 
-O Legacia decidiu migrar a interface para React antes de começar o uso real. O Claude Code constrói cada etapa e o Codex revisa. Regras da migração:
+O Legacia decidiu migrar a interface para React antes de começar o uso real. O Claude Code construiu cada etapa e o Codex revisou. As cinco etapas foram concluídas; o Legacia aprovou as telas novas e autorizou retirar o Streamlit em 28/10/2026. Registro das regras da migração:
 
 - **As regras de negócio em `radar/` não mudam** e seus testes continuam valendo. A migração troca só a interface e acrescenta a API.
 - Ordem de trabalho, cada etapa em ramificação e pull request próprios:
@@ -301,7 +303,7 @@ O Legacia decidiu migrar a interface para React antes de começar o uso real. O 
   3. Telas, uma por vez: Painel, Fornecedores, Produtos e SKUs, Calculadora, Pesquisa, Importar, Kits, Decisão de compra.
   4. Teste de ponta a ponta no navegador (Playwright) do fluxo principal e do caso da margem (R$ 14,33 e 23,9%).
   5. Retirar a pasta `app/` e o Streamlit só depois que todas as telas React estiverem aprovadas.
-- Enquanto a migração não termina, a versão Streamlit da `main` continua funcionando. O banco é o mesmo; a API não muda o esquema sem nova migração.
+- Durante a migração, a versão Streamlit continuou funcionando. Ela foi retirada na etapa 5, junto com as dependências `streamlit` e `plotly` e os testes das telas antigas (cobertos pelos testes da API, das telas React e de ponta a ponta). O banco não mudou; a API não muda o esquema sem nova migração.
 - Novas dependências entram fixadas por versão (`requirements.txt` e `package-lock.json`).
 
 ## Review guidelines

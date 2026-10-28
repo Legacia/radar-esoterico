@@ -1,6 +1,6 @@
 """Sessões guardadas no servidor; o navegador recebe só um identificador aleatório.
 
-Reiniciar o servidor encerra todas as sessões, como já acontecia no Streamlit.
+Reiniciar o servidor encerra todas as sessões.
 """
 import secrets
 from threading import Lock

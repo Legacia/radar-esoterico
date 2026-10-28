@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PAGINAS, SECOES, enderecoDe, lerRota } from "../src/rotas";
+import { TELAS } from "../src/paginas/Shell";
 
 describe("rotas", () => {
   it("lê página e filtros do endereço", () => {
@@ -22,5 +23,9 @@ describe("rotas", () => {
     expect(SECOES.map((s) => s.titulo)).toEqual(["Visão geral", "Fornecimento", "Mercado", "Decisão"]);
     expect(PAGINAS).toHaveLength(8);
     expect(new Set(PAGINAS.map((p) => p.chave)).size).toBe(8);
+  });
+
+  it("toda página tem uma tela", () => {
+    expect(Object.keys(TELAS).sort()).toEqual(PAGINAS.map((p) => p.chave).sort());
   });
 });

@@ -12,8 +12,8 @@ import { Painel } from "./Painel";
 import { Pesquisa } from "./Pesquisa";
 import { Produtos } from "./Produtos";
 
-// Telas já migradas; as demais mostram o aviso de construção.
-const TELAS: Record<string, () => JSX.Element> = { painel: Painel, fornecedores: Fornecedores, produtos: Produtos, calculadora: Calculadora, pesquisa: Pesquisa, importar: Importar, kits: Kits, compras: Compras };
+// Uma tela para cada página de rotas.ts (o teste de rotas confere as oito).
+export const TELAS: Record<string, () => JSX.Element> = { painel: Painel, fornecedores: Fornecedores, produtos: Produtos, calculadora: Calculadora, pesquisa: Pesquisa, importar: Importar, kits: Kits, compras: Compras };
 
 export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => Promise<void> }) {
   const rota = useRota();
@@ -78,11 +78,7 @@ export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => Pro
       <main id="conteudo" className="conteudo" tabIndex={-1}>
         {erroSaida && <Aviso tipo="erro">{erroSaida}</Aviso>}
         <Cabecalho titulo={pagina.titulo} descricao={pagina.descricao} />
-        {Tela ? <Tela /> : (
-          <Aviso titulo="Tela em construção.">
-            Esta tela ainda funciona só na versão Streamlit. Ela chega aqui na etapa 3 da migração.
-          </Aviso>
-        )}
+        <Tela />
       </main>
     </div>
   );
