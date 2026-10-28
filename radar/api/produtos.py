@@ -10,7 +10,8 @@ from radar.api.fornecedores import data_do_texto, linha_sku
 from radar.banco import conectar
 from radar.fornecedores import listar_fornecedores
 from radar.margem.configuracao import obter_configuracao
-from radar.produtos import excluir_sku, listar_produtos, listar_skus, registrar_cotacao, salvar_produto
+from radar.produtos import (excluir_sku, excluir_variacao, listar_produtos, listar_skus, listar_variacoes,
+    registrar_cotacao, salvar_produto, salvar_variacao)
 from radar.valores import dinheiro_texto
 
 CAMPOS = ("id", "nome", "familia", "status", "especificacoes_conferidas", "procedencia_conferida",
@@ -27,12 +28,21 @@ class Produto(BaseModel):
 
 
 class Cotacao(BaseModel):
+    """Preço e quantidade mínima na unidade cotada; preço conservador por unidade de venda."""
     fornecedor_id: StrictInt
-    codigo: str
+    variacao_id: StrictInt | None = None
+    codigo: str = ""
     custo: str
+    unidades_por_cotacao: StrictInt = 1
     quantidade_minima: StrictInt
     data: str
     preco_venda: str | None = None
+
+
+class Variacao(BaseModel):
+    cor: str = ""
+    tamanho: str = ""
+    unidade_venda: str = "unidade"
 
 
 def _produto(p):
@@ -70,6 +80,7 @@ def ficha(produto_id: int):
     config = obter_configuracao()
     return {**_produto(produto), "limite_cotacao_dias": config.limite_cotacao_dias,
             "skus": [linha_sku(s, config) for s in listar_skus(produto_id=produto_id)],
+            "variacoes": listar_variacoes(produto_id),
             "apoio": apoio_de("produto", produto_id),
             "embalagem_padrao": texto(config.parametros.embalagem.quantize(CENTAVO))}
 
@@ -84,7 +95,25 @@ def cotar(produto_id: int, dados: Cotacao):
     preco = dados.preco_venda.strip() if dados.preco_venda else ""
     return {"id": registrar_cotacao(dados.fornecedor_id, produto_id, dados.codigo, dinheiro_texto(dados.custo),
                                     dados.quantidade_minima, data_do_texto(dados.data),
-                                    dinheiro_texto(preco) if preco else None)}
+                                    dinheiro_texto(preco) if preco else None, variacao_id=dados.variacao_id,
+                                    unidades_por_cotacao=dados.unidades_por_cotacao)}
+
+
+@protegido.post("/produtos/{produto_id}/variacoes")
+def nova_variacao(produto_id: int, dados: Variacao):
+    return {"id": salvar_variacao(produto_id, dados.cor, dados.tamanho, dados.unidade_venda)}
+
+
+@protegido.put("/produtos/{produto_id}/variacoes/{variacao_id}")
+def alterar_variacao(produto_id: int, variacao_id: int, dados: Variacao):
+    return {"id": salvar_variacao(produto_id, dados.cor, dados.tamanho, dados.unidade_venda, variacao_id)}
+
+
+@protegido.delete("/variacoes/{variacao_id}")
+def remover_variacao(variacao_id: int, codigo: str):
+    # O código interno confirmado vai junto, para uma tela antiga não apagar outra variação.
+    excluir_variacao(variacao_id, codigo)
+    return {"ok": True}
 
 
 @protegido.delete("/cotacoes/{sku_id}")

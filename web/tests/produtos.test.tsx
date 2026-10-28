@@ -15,8 +15,13 @@ const CATALOGO = {
 };
 const FICHA = {
   ...KIT, limite_cotacao_dias: 15,
+  variacoes: [
+    { id: 1, codigo: "RAD-000001", cor: "", tamanho: "", unidade_venda: "unidade", cotacoes: 1 },
+    { id: 2, codigo: "RAD-000002", cor: "Preto", tamanho: "G", unidade_venda: "caixa", cotacoes: 0 },
+  ],
   skus: [{
-    id: 9, codigo: "KIT-01", produto_id: 1, produto: KIT.nome, fornecedor_id: 3, fornecedor: "Fornecedor fictício Alfa",
+    id: 9, codigo: "RAD-000001", codigo_parceiro: "KIT-01", variacao_id: 1, cor: "", tamanho: "", unidade_venda: "unidade", preco_cotado_centavos: 2000, unidades_por_cotacao: 1,
+    produto_id: 1, produto: KIT.nome, fornecedor_id: 3, fornecedor: "Fornecedor fictício Alfa",
     custo_centavos: 2000, quantidade_minima: 10, data_cotacao: "2026-10-20", cotacao_antiga: false,
     preco_venda_centavos: 5990, contribuicao: "14.33", margem_pct: "0.2392320534223706176961602671",
     preco_minimo: "55.56", aviso_preco_minimo: null,
@@ -78,15 +83,19 @@ describe("Produtos e SKUs", () => {
     const ficha = await screen.findByRole("dialog", { name: "Kit fictício de incensos" });
     await userEvent.click(within(ficha).getByRole("tab", { name: "Registrar cotação" }));
     await userEvent.selectOptions(within(ficha).getByLabelText("Fornecedor da cotação"), "Fornecedor fictício Beta");
-    await userEvent.type(within(ficha).getByLabelText("Código no fornecedor"), "SUP-01");
-    await userEvent.type(within(ficha).getByLabelText("Custo unitário (R$)"), "6,00");
-    await userEvent.clear(within(ficha).getByLabelText("Quantidade mínima"));
-    await userEvent.type(within(ficha).getByLabelText("Quantidade mínima"), "12");
+    await userEvent.selectOptions(within(ficha).getByLabelText("Variação (SKU)"), "RAD-000002 · Preto · G · caixa");
+    await userEvent.type(within(ficha).getByLabelText("Código do parceiro (opcional)"), "SUP-01");
+    await userEvent.type(within(ficha).getByLabelText("Preço cotado (R$)"), "60,00");
+    await userEvent.clear(within(ficha).getByLabelText("Unidades de venda na unidade cotada"));
+    await userEvent.type(within(ficha).getByLabelText("Unidades de venda na unidade cotada"), "20");
+    await userEvent.clear(within(ficha).getByLabelText("Quantidade mínima (em unidades cotadas)"));
+    await userEvent.type(within(ficha).getByLabelText("Quantidade mínima (em unidades cotadas)"), "2");
     expect(within(ficha).getByLabelText("Data da cotação")).toHaveAttribute("max", hojeIso());
     await userEvent.click(within(ficha).getByRole("button", { name: "Salvar cotação" }));
     await waitFor(() => expect(chamadas.some((c) => c.caminho === "/api/produtos/1/cotacoes")).toBe(true));
     expect(chamadas.find((c) => c.caminho === "/api/produtos/1/cotacoes")!.corpo).toEqual({
-      fornecedor_id: 4, codigo: "SUP-01", custo: "6,00", quantidade_minima: 12, data: hojeIso(), preco_venda: null });
+      fornecedor_id: 4, variacao_id: 2, codigo: "SUP-01", custo: "60,00", unidades_por_cotacao: 20, quantidade_minima: 2,
+      data: hojeIso(), preco_venda: null });
     expect(await screen.findByText("Cotação registrada.")).toBeInTheDocument();
   });
 
@@ -95,13 +104,38 @@ describe("Produtos e SKUs", () => {
     mostrar("#/produtos?ficha=1");
     const ficha = await screen.findByRole("dialog", { name: "Kit fictício de incensos" });
     await userEvent.click(within(ficha).getByRole("tab", { name: "Registrar cotação" }));
-    await userEvent.type(within(ficha).getByLabelText("Código no fornecedor"), "X");
-    await userEvent.type(within(ficha).getByLabelText("Custo unitário (R$)"), "1");
-    await userEvent.clear(within(ficha).getByLabelText("Quantidade mínima"));
-    await userEvent.type(within(ficha).getByLabelText("Quantidade mínima"), "2,5");
+    await userEvent.type(within(ficha).getByLabelText("Preço cotado (R$)"), "1");
+    await userEvent.clear(within(ficha).getByLabelText("Quantidade mínima (em unidades cotadas)"));
+    await userEvent.type(within(ficha).getByLabelText("Quantidade mínima (em unidades cotadas)"), "2,5");
     await userEvent.click(within(ficha).getByRole("button", { name: "Salvar cotação" }));
     expect(await within(ficha).findByRole("alert")).toHaveTextContent("inteiro maior que zero");
     expect(chamadas.some((c) => c.metodo === "POST")).toBe(false);
+  });
+
+  it("variações: lista os SKUs RAD, cria, edita e exclui com o código confirmado", async () => {
+    const chamadas = simular();
+    mostrar("#/produtos?ficha=1");
+    const ficha = await screen.findByRole("dialog", { name: "Kit fictício de incensos" });
+    await userEvent.click(within(ficha).getByRole("tab", { name: "Variações (2)" }));
+    const preto = within(ficha).getByRole("cell", { name: "RAD-000002" }).closest("tr")!;
+    expect(preto).toHaveTextContent("Preto");
+    expect(preto).toHaveTextContent("caixa");
+    await userEvent.type(within(ficha).getByLabelText("Cor"), "Branco");
+    await userEvent.clear(within(ficha).getByLabelText("Unidade de venda mínima"));
+    await userEvent.type(within(ficha).getByLabelText("Unidade de venda mínima"), "caixa com 8 varetas");
+    await userEvent.click(within(ficha).getByRole("button", { name: "Criar variação" }));
+    await waitFor(() => expect(chamadas.some((c) => c.caminho === "/api/produtos/1/variacoes")).toBe(true));
+    expect(chamadas.find((c) => c.caminho === "/api/produtos/1/variacoes")!.corpo).toEqual(
+      { cor: "Branco", tamanho: "", unidade_venda: "caixa com 8 varetas" });
+    await userEvent.click(await within(ficha).findByRole("button", { name: "Editar RAD-000002" }));
+    expect(within(ficha).getByLabelText("Tamanho")).toHaveValue("G");
+    await userEvent.click(within(ficha).getByRole("button", { name: "Salvar variação" }));
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === "PUT" && c.caminho === "/api/produtos/1/variacoes/2")).toBe(true));
+    const linha = within(ficha).getByRole("cell", { name: "RAD-000002" }).closest("tr")!;
+    await userEvent.click(within(linha).getByRole("button", { name: "Excluir" }));
+    await userEvent.click(within(linha).getByRole("button", { name: "Sim, excluir" }));
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === "DELETE")).toBe(true));
+    expect(chamadas.find((c) => c.metodo === "DELETE")!.caminho).toBe("/api/variacoes/2?codigo=RAD-000002");
   });
 
   it("sem fornecedores, orienta a cadastrar um", async () => {

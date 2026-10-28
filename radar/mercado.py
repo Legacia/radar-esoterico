@@ -7,6 +7,7 @@ from radar.banco import conectar
 from radar.apoio import embalagem_produto
 from radar.margem import calcular, com_embalagem, preco_minimo
 from radar.margem.configuracao import _ler
+from radar.produtos import com_codigo_interno
 from radar.valores import centavos, data_iso, obrigatorio
 
 
@@ -73,8 +74,9 @@ def listar_anuncios(caminho=None):
 
 def listar_cotacoes(produto_id, caminho=None):
     with conectar(caminho) as c:
-        return [dict(r) for r in c.execute("""SELECT s.*, f.nome AS fornecedor FROM sku_fornecedor s
-            JOIN fornecedor f ON f.id=s.fornecedor_id WHERE s.produto_id=? ORDER BY s.data_cotacao DESC,s.id DESC""", (produto_id,))]
+        return [com_codigo_interno(r) for r in c.execute("""SELECT s.*, v.codigo AS codigo_interno,
+            v.cor, v.tamanho, v.unidade_venda, f.nome AS fornecedor FROM sku_fornecedor s
+            JOIN fornecedor f ON f.id=s.fornecedor_id JOIN variacao v ON v.id=s.variacao_id WHERE s.produto_id=? ORDER BY s.data_cotacao DESC,s.id DESC""", (produto_id,))]
 
 
 def mediana_precos(valores):

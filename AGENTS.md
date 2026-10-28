@@ -90,7 +90,7 @@ Dinheiro entre API e interface trafega como **texto decimal** (`"59.90"`) ou cen
 
 ## Modelo de dados
 
-Tabelas: `fornecedor`, `interacao`, `sku_fornecedor`, `produto`, `anuncio`, `preco_observado`, `kit`, `kit_item`, `cenario_margem`, `usuario`, `tarefa`, `item_apoio`, `produto_apoio`, `kit_apoio`.
+Tabelas: `fornecedor`, `interacao`, `sku_fornecedor`, `produto`, `anuncio`, `preco_observado`, `kit`, `kit_item`, `cenario_margem`, `usuario`, `tarefa`, `item_apoio`, `produto_apoio`, `kit_apoio`, `variacao`.
 
 `tarefa` guarda as tarefas do plano de 30 dias para o Painel (aprovada pelo Legacia em 26/10/2026).
 
@@ -98,7 +98,8 @@ Tabelas: `fornecedor`, `interacao`, `sku_fornecedor`, `produto`, `anuncio`, `pre
 
 Pontos que importam:
 
-- `sku_fornecedor` liga `fornecedor` a `produto` e guarda código, custo unitário, quantidade mínima e **data da cotação**. O mesmo produto pode ter cotações de vários fornecedores.
+- `variacao` é o **SKU** de vocês (decisões do Legacia em 28/10/2026): cada produto tem uma ou mais variações, com código interno `RAD-000001` gerado pelo Radar e nunca reaproveitado, cor e tamanho opcionais e **unidade de venda mínima** (unidade para um caldeirão, caixa para incenso etc.). Todo produto nasce com uma variação.
+- `sku_fornecedor` é a cotação de uma variação por um fornecedor: código do parceiro (opcional), preço cotado na unidade do fornecedor, quantas unidades de venda vêm nessa unidade cotada, quantidade mínima e **data da cotação**. O custo usado em todas as contas (`custo_unitario_centavos`) é o preço cotado dividido por essas unidades, **arredondado para cima** no centavo; a quantidade mínima é guardada em unidades de venda. O mesmo SKU pode ter cotações de vários fornecedores.
 - Toda cotação e todo preço observado guardam a data. Preço de atacado muda; é preciso saber a idade do número.
 - `fornecedor` guarda status, CNPJ, contato, pedido mínimo, prazo e condição de pagamento, motivo do descarte e data em que virou oficial.
 - `interacao` é o histórico de contatos (data, canal, resumo).
@@ -119,10 +120,10 @@ Promoção a oficial exige tudo isto:
 Regra da margem na promoção (decisões do Legacia em 26/10/2026):
 
 - A margem precisa atingir o alvo configurado, nunca abaixo de 20%, em pelo menos **três produtos diferentes** do fornecedor. Vários códigos do mesmo produto contam como um só, pela melhor margem entre eles.
-- Vale a cotação mais recente de cada código. Códigos que só diferem em maiúsculas e minúsculas são o mesmo código.
+- Vale a cotação mais recente de cada SKU (variação) por fornecedor. Desde 28/10/2026 o SKU é a variação com código RAD; o código do parceiro é opcional e, quando preenchido, identifica uma só variação no fornecedor (maiúsculas e minúsculas são o mesmo código).
 - Cotação mais antiga que o limite configurado gera aviso na tela, mas **não** impede a promoção.
 
-Exclusão (decisão do Legacia em 28/10/2026): fornecedor só pode ser excluído de vez se não tiver cotações nem contatos; com histórico, usa-se "Descartado ou pausado". Um SKU (todas as cotações do mesmo código, sem diferenciar maiúsculas) só pode ser excluído se nenhuma cotação dele estiver em kit, plano de compra ou cenário de margem. A tela pede confirmação antes de excluir.
+Exclusão (decisão do Legacia em 28/10/2026): fornecedor só pode ser excluído de vez se não tiver cotações nem contatos; com histórico, usa-se "Descartado ou pausado". Um SKU num fornecedor (todas as cotações daquela variação) só pode ser excluído se nenhuma cotação dele estiver em kit, plano de compra ou cenário de margem. Uma variação só pode ser excluída sem cotações, e o produto fica sempre com pelo menos uma. A tela pede confirmação antes de excluir.
 
 O sistema nunca promove sozinho. O botão fica disponível, mas lista o que falta e não muda o status enquanto o checklist estiver incompleto. A data da promoção é registrada.
 
@@ -287,6 +288,12 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 - Novos módulos de negócio: `radar/mercado.py`, `radar/compras.py`, `radar/kits.py`, `radar/painel.py` e importador em `radar/importacao/`. Telas (hoje em React): Pesquisa, Importar, Decisão de compra e Kits; o Painel mostra indicadores, tarefas e pendências.
 - Único CSV de exemplo: `exemplos/anuncios_ficticios.csv`, sem informação real. Formato e decisões confirmadas sobre critérios de compra, estoque e pendências estão documentados no README.
 
+## Variações e unidade de venda (28/10/2026)
+
+- Migração 5: tabela `variacao` (AUTOINCREMENT, código `RAD-` + id com 6 dígitos) e, em `sku_fornecedor`, `variacao_id`, `preco_cotado_centavos` e `unidades_por_cotacao`. Dados antigos ganharam uma variação "unidade" por produto, com fator 1 e preço cotado igual ao custo.
+- Nas consultas, `codigo` é o código interno (RAD) e `codigo_parceiro` o do fornecedor. Regras em `radar/produtos.py` (`salvar_variacao`, `excluir_variacao`, `registrar_cotacao`, `custo_por_unidade_venda`).
+- Tela: aba **Variações** na ficha do produto; o formulário de cotação pede variação, código do parceiro, preço cotado, unidades de venda na unidade cotada e quantidade mínima em unidades cotadas.
+
 ## Itens de apoio (28/10/2026)
 
 - Migração 4: tabelas `item_apoio` (nome, `fornecedor_id` opcional, `custo_centavos`, `data_cotacao`), `produto_apoio` e `kit_apoio` (quantidade inteira de 1 a 1000 por unidade vendida) e coluna opcional `kit.preco_venda_centavos` para estimar a margem do kit.
@@ -328,7 +335,7 @@ Como revisar cada pull request do Claude Code:
 - Separe o relato em três grupos: **erros confirmados** (com o arquivo, a linha e um exemplo concreto que falha), **riscos** e **sugestões**. Não marque como erro o que é só preferência de estilo.
 - Prioridade máxima (trate como P0/P1):
   - Dinheiro com `float`, em Python ou TypeScript; arredondamento errado; o caso obrigatório da margem deixando de dar R$ 14,33, 23,9% e preço mínimo R$ 55,56.
-  - Regra de negócio diferente do AGENTS.md: promoção de fornecedor (três produtos diferentes, piso de 20%, cotação mais recente por código sem diferenciar maiúsculas), critérios de compra, limite de 20% do orçamento para produto não validado, pendências do painel.
+  - Regra de negócio diferente do AGENTS.md: promoção de fornecedor (três produtos diferentes, piso de 20%, cotação mais recente por SKU/variação em cada fornecedor), critérios de compra, limite de 20% do orçamento para produto não validado, pendências do painel.
   - Regra de margem, compra ou promoção recalculada no React em vez de vir da API.
   - Rota da API que funcione sem sessão (só `POST /api/entrar` pode), cookie sem `HttpOnly`/`SameSite=Strict`, sessão que passe de 8 horas ou que seja prorrogada pelo uso, senha fora de hash, mensagem de login que revele se o e-mail existe.
   - Migração de banco publicada que tenha sido editada, ou mudança de esquema sem migração nova.

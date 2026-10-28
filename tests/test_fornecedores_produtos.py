@@ -156,7 +156,7 @@ def test_cotacao_antiga_inserida_depois_nao_substitui_recente(fornecedor, produt
 def test_codigo_nao_pode_mudar_de_produto(fornecedor, produto, db):
     outro = salvar_produto("Outro produto fictício", "", "Candidato", caminho=db)
     registrar_cotacao(fornecedor, produto, "ABC", D(20), 1, date.today(), caminho=db)
-    with pytest.raises(ValueError, match="outro produto"):
+    with pytest.raises(ValueError, match="outra variação"):
         registrar_cotacao(fornecedor, outro, "ABC", D(20), 1, date.today(), caminho=db)
 
 

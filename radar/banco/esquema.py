@@ -159,3 +159,31 @@ MIGRACOES += ((
         CHECK(preco_venda_centavos IS NULL OR
             (typeof(preco_venda_centavos)='integer' AND preco_venda_centavos > 0))""",
 ),)
+
+# Variações (decisões do Legacia em 28/10/2026): o SKU passa a ser a variação do produto, com código
+# interno RAD-000001 que nunca é reaproveitado, cor, tamanho e unidade de venda. A cotação aponta para
+# a variação; o código do parceiro (sku_fornecedor.codigo) fica opcional, guardado como texto vazio.
+# A cotação guarda o preço cotado e quantas unidades de venda vêm na unidade cotada; o custo por
+# unidade de venda (custo_unitario_centavos, usado em todas as contas) é o preço dividido por esse
+# número, arredondado para cima. Dados antigos: uma variação "padrão" por produto, fator 1.
+MIGRACOES += ((
+    """CREATE TABLE variacao (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        produto_id INTEGER NOT NULL REFERENCES produto(id),
+        codigo TEXT UNIQUE,
+        cor TEXT NOT NULL DEFAULT '',
+        tamanho TEXT NOT NULL DEFAULT '',
+        unidade_venda TEXT NOT NULL DEFAULT 'unidade' CHECK(length(trim(unidade_venda)) > 0)
+    )""",
+    "INSERT INTO variacao(produto_id) SELECT id FROM produto ORDER BY id",
+    "UPDATE variacao SET codigo = 'RAD-' || printf('%06d', id)",
+    "ALTER TABLE sku_fornecedor ADD COLUMN variacao_id INTEGER REFERENCES variacao(id)",
+    "UPDATE sku_fornecedor SET variacao_id = (SELECT id FROM variacao WHERE variacao.produto_id = sku_fornecedor.produto_id)",
+    """ALTER TABLE sku_fornecedor ADD COLUMN preco_cotado_centavos INTEGER
+        CHECK(preco_cotado_centavos IS NULL OR (typeof(preco_cotado_centavos)='integer' AND preco_cotado_centavos >= 0))""",
+    "UPDATE sku_fornecedor SET preco_cotado_centavos = custo_unitario_centavos",
+    """ALTER TABLE sku_fornecedor ADD COLUMN unidades_por_cotacao INTEGER NOT NULL DEFAULT 1
+        CHECK(typeof(unidades_por_cotacao)='integer' AND unidades_por_cotacao BETWEEN 1 AND 100000)""",
+    "CREATE INDEX idx_sku_variacao_data ON sku_fornecedor(fornecedor_id, variacao_id, data_cotacao)",
+    "CREATE INDEX idx_variacao_produto ON variacao(produto_id)",
+),)

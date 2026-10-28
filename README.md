@@ -107,8 +107,18 @@ sem editar as já publicadas. Migrações e gravações falhas são revertidas.
 fornecedor e de produto) há **Excluir SKU**. Os dois pedem confirmação e não dá para desfazer
 (só restaurando um backup). Só some o que não tem histórico ligado: fornecedor com cotações ou
 contatos não é excluído (use "Descartado ou pausado"), e SKU usado em kit, plano de compra ou
-cenário de margem também não. Excluir um SKU apaga todas as cotações daquele código.
+cenário de margem também não. Excluir um SKU apaga as cotações daquela variação naquele fornecedor.
 Fornecedor com item de apoio cadastrado também não é excluído.
+
+### Variações (SKUs) e unidade de venda
+
+Cada produto tem uma ou mais **variações**, e cada variação é um SKU de vocês, com código gerado
+pelo Radar (`RAD-000001`, nunca repetido). Na aba **Variações** da ficha do produto você informa
+cor e tamanho (opcionais) e a **unidade de venda mínima**: unidade para um caldeirão, caixa para um
+incenso. Na cotação, informe o preço como o fornecedor cota e quantas unidades de venda vêm nele:
+um pacote com 20 caixas a R$ 60,00 vira custo de R$ 3,00 por caixa, que é o valor usado na margem
+(divisões quebradas são arredondadas para cima no centavo). O código do parceiro é opcional.
+Produtos já cadastrados ganharam uma variação "unidade" com as cotações que já tinham.
 
 ### Itens de apoio e embalagem
 
@@ -185,8 +195,8 @@ Interface: `web/` (React + TypeScript), que só chama a API e não refaz contas 
 5. Na ficha do fornecedor, tente **Promover a fornecedor oficial**: as pendências são exibidas
    sem mudar a etapa. A promoção exige todas as verificações e três produtos diferentes
    com margem no alvo configurado, respeitando o piso de 20% aprovado pelo Legacia.
-   Vários códigos do mesmo produto contam como um só, pela melhor margem entre as
-   cotações atuais desses códigos.
+   Várias variações (SKUs) do mesmo produto contam como um só, pela melhor margem entre as
+   cotações atuais delas.
    Descartar ou pausar exige motivo. Nenhuma dessas decisões é automática.
 
 Use dados comerciais somente no banco local. Os testes já cobrem o cenário completo com
@@ -199,7 +209,7 @@ são informados como `20` para 20%. Contas usam Decimal sem arredondamentos inte
 Contribuição é exibida com duas casas, e margem com uma; o checklist compara a margem
 antes do arredondamento. O preço mínimo é arredondado para cima até o próximo centavo.
 
-A cotação mais recente por data de cada código do fornecedor é usada nas estimativas.
+A cotação mais recente por data de cada SKU (variação) no fornecedor é usada nas estimativas.
 Se houver duas na mesma data, prevalece a última registrada. Re-cotações preservam o histórico
 no banco e não contam como SKUs adicionais. O mesmo produto pode ter vários fornecedores.
 A data da última cotação do fornecedor acompanha a mais recente das cotações registradas.

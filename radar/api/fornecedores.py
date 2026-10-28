@@ -51,7 +51,10 @@ def linha_sku(sku, config):
     except ValueError as erro:
         minimo, aviso = None, str(erro)
     return {
-        "id": sku["id"], "codigo": sku["codigo"], "produto_id": sku["produto_id"], "produto": sku["produto"],
+        "id": sku["id"], "codigo": sku["codigo"], "codigo_parceiro": sku["codigo_parceiro"],
+        "variacao_id": sku["variacao_id"], "cor": sku["cor"], "tamanho": sku["tamanho"], "unidade_venda": sku["unidade_venda"],
+        "preco_cotado_centavos": sku["preco_cotado_centavos"], "unidades_por_cotacao": sku["unidades_por_cotacao"],
+        "produto_id": sku["produto_id"], "produto": sku["produto"],
         "fornecedor_id": sku["fornecedor_id"], "fornecedor": sku["fornecedor"],
         "custo_centavos": sku["custo_unitario_centavos"], "quantidade_minima": sku["quantidade_minima"],
         "data_cotacao": sku["data_cotacao"],

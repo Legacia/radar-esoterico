@@ -9,7 +9,7 @@ from radar.kits import (ajustar_estoque, calcular_necessidades, consultar_kit, n
     planejar_kits, remover_componente, salvar_componente, salvar_kit)
 from radar.margem.configuracao import obter_configuracao
 from radar.painel import calcular_pendencias, obter_painel, salvar_tarefa
-from radar.produtos import listar_skus, registrar_cotacao, salvar_produto
+from radar.produtos import listar_skus, registrar_cotacao, salvar_produto, salvar_variacao
 from tests.apoio_bloco3 import criar_base
 
 
@@ -82,7 +82,8 @@ def test_pendencias_usam_datas_etapas_e_resposta_explicita(db):
     hoje = date.today()
     alterar_etapa(fornecedor,"Em contato",caminho=db)
     registrar_interacao(fornecedor,hoje-timedelta(days=6),"Telefone","Contato fictício",db,situacao_resposta="aguardando")
-    registrar_cotacao(fornecedor,produto,"ANTIGO",D(40),1,hoje-timedelta(days=16),D(50),db)
+    outra = salvar_variacao(produto,cor="Fictícia",caminho=db)
+    registrar_cotacao(fornecedor,produto,"ANTIGO",D(40),1,hoje-timedelta(days=16),D(50),db,variacao_id=outra)
     painel = obter_painel(db,hoje)
     tipos = {p["tipo"] for p in painel["pendencias"]}
     assert tipos == {"Sem resposta há mais de 5 dias","Cotação antiga","Margem abaixo do alvo"}

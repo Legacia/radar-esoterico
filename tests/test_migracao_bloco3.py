@@ -24,7 +24,7 @@ def test_migra_v2_preservando_dados_sem_classificar_contatos_antigos(tmp_path):
     assert autenticar("migracao3@example.invalid","senha-ficticia-123",db)
     assert obter_orcamento(db)["total_centavos"] == 100000
     with conectar(db) as c:
-        assert c.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert c.execute("PRAGMA user_version").fetchone()[0] == len(MIGRACOES)
         assert c.execute("SELECT situacao_resposta FROM interacao").fetchone()[0] is None
         assert c.execute("SELECT sku_fornecedor_id FROM kit_item").fetchone()[0] is None
         assert c.execute("SELECT quantidade FROM kit_item").fetchone()[0] == 3

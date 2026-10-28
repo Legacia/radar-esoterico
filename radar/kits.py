@@ -133,7 +133,7 @@ def consultar_kit(kit_id, quantidade_kits=1, caminho=None):
         if not c.execute("SELECT 1 FROM kit WHERE id=?", (kit_id,)).fetchone():
             raise ValueError("Kit não encontrado.")
         componentes = [dict(r) for r in c.execute("""SELECT ki.*,p.nome AS produto,p.estoque_atual,
-            s.custo_unitario_centavos,s.data_cotacao,s.codigo FROM kit_item ki
-            JOIN produto p ON p.id=ki.produto_id LEFT JOIN sku_fornecedor s ON s.id=ki.sku_fornecedor_id
+            s.custo_unitario_centavos,s.data_cotacao,v.codigo FROM kit_item ki
+            JOIN produto p ON p.id=ki.produto_id LEFT JOIN sku_fornecedor s ON s.id=ki.sku_fornecedor_id LEFT JOIN variacao v ON v.id=s.variacao_id
             WHERE ki.kit_id=? ORDER BY p.nome""", (kit_id,))]
     return calcular_necessidades(componentes, quantidade_kits)

@@ -54,7 +54,8 @@ def vincular(anuncio_id: int, dados: Vinculo):
 
 @protegido.get("/pesquisa/cotacoes")
 def cotacoes(produto_id: int):
-    return [{"id": c["id"], "fornecedor": c["fornecedor"], "codigo": c["codigo"], "data_cotacao": c["data_cotacao"],
+    return [{"id": c["id"], "fornecedor": c["fornecedor"], "codigo": c["codigo"], "codigo_parceiro": c["codigo_parceiro"],
+             "unidade_venda": c["unidade_venda"], "data_cotacao": c["data_cotacao"],
              "custo_centavos": c["custo_unitario_centavos"], "quantidade_minima": c["quantidade_minima"],
              "preco_venda_centavos": c["preco_venda_centavos"]} for c in listar_cotacoes(produto_id)]
 
