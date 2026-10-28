@@ -19,10 +19,10 @@ describe("rotas", () => {
     expect(enderecoDe("pesquisa", { q: "incenso", etapa: "" })).toBe("#/pesquisa?q=incenso");
   });
 
-  it("tem as oito telas nas quatro seções", () => {
+  it("tem as nove telas nas quatro seções", () => {
     expect(SECOES.map((s) => s.titulo)).toEqual(["Visão geral", "Fornecimento", "Mercado", "Decisão"]);
-    expect(PAGINAS).toHaveLength(8);
-    expect(new Set(PAGINAS.map((p) => p.chave)).size).toBe(8);
+    expect(PAGINAS).toHaveLength(9);
+    expect(new Set(PAGINAS.map((p) => p.chave)).size).toBe(9);
   });
 
   it("toda página tem uma tela", () => {

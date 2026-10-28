@@ -1,4 +1,4 @@
-"""Contas locais; senhas são solicitadas somente no terminal do servidor."""
+"""Contas locais: criadas pela tela Contas (por quem já entrou) ou pelo terminal do servidor."""
 import argparse
 from getpass import getpass
 import sqlite3
@@ -54,6 +54,22 @@ def redefinir_senha(email, senha, caminho=None):
         cursor = conexao.execute("UPDATE usuario SET senha_hash = ? WHERE email = ?", (senha_hash, email))
         if cursor.rowcount != 1:
             raise ValueError("Conta não encontrada.")
+
+
+def redefinir_senha_por_id(usuario_id, senha, caminho=None):
+    _validar_senha(senha)
+    senha_hash = _HASHER.hash(senha)
+    with conectar(caminho) as conexao:
+        cursor = conexao.execute("UPDATE usuario SET senha_hash = ? WHERE id = ?", (senha_hash, usuario_id))
+        if cursor.rowcount != 1:
+            raise ValueError("Conta não encontrada.")
+
+
+def listar_usuarios(caminho=None):
+    """Nome e e-mail de cada conta; o hash da senha nunca sai daqui."""
+    with conectar(caminho) as conexao:
+        linhas = conexao.execute("SELECT id, nome, email FROM usuario ORDER BY nome COLLATE NOCASE, id").fetchall()
+    return [dict(linha) for linha in linhas]
 
 
 def autenticar(email, senha, caminho=None):
