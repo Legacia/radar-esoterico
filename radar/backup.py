@@ -18,6 +18,8 @@ MANTER_PADRAO = 30
 PREFIXO = "radar-"
 # radar-AAAA-MM-DD_HHMMSS.db, ou radar-AAAA-MM-DD_HHMMSS-N.db quando há mais de uma no mesmo segundo.
 NOME = re.compile(r"^radar-(\d{4}-\d{2}-\d{2}_\d{6})(?:-(\d+))?\.db$")
+# Mesmo nome, contando também as cópias ainda em andamento (.parcial), para reservar números.
+NOME_OU_RESERVA = re.compile(r"^radar-(\d{4}-\d{2}-\d{2}_\d{6})(?:-(\d+))?\.(?:db|parcial)$")
 
 
 def fazer_backup(origem=None, pasta=None, manter=MANTER_PADRAO, agora=None):
@@ -31,14 +33,46 @@ def fazer_backup(origem=None, pasta=None, manter=MANTER_PADRAO, agora=None):
         raise ValueError(f"Banco não encontrado em {origem}. Nada para copiar.")
     pasta.mkdir(parents=True, exist_ok=True)
     momento = (agora or datetime.now()).strftime("%Y-%m-%d_%H%M%S")
-    # No mesmo segundo, o número vem depois do maior já usado, mesmo que a cópia anterior tenha
-    # sido apagada pela limpeza: assim a cópia nova nunca parece mais antiga que as outras.
-    usados = [int(m[2] or 1) for a in pasta.glob(f"{PREFIXO}{momento}*.db")
-              if (m := NOME.match(a.name)) and m[1] == momento]
-    numero = max(usados, default=0) + 1
-    destino = pasta / (f"{PREFIXO}{momento}.db" if numero == 1 else f"{PREFIXO}{momento}-{numero}.db")
-    temporario = destino.with_suffix(".parcial")
+    destino, temporario = _reservar(pasta, momento)
 
+    try:
+        resultado = _copiar(origem, temporario)
+    except BaseException:
+        temporario.unlink(missing_ok=True)
+        raise
+    if resultado != "ok":
+        temporario.unlink(missing_ok=True)
+        raise ValueError(f"A cópia não passou na conferência do SQLite: {resultado}")
+    temporario.replace(destino)
+    _limpar(pasta, manter)
+    return destino
+
+
+def _reservar(pasta, momento):
+    """Escolhe o nome da cópia e o reserva criando o arquivo .parcial de forma exclusiva.
+
+    No mesmo segundo, o número vem depois do maior já usado (cópias prontas ou em andamento), mesmo
+    que a anterior tenha sido apagada pela limpeza. A criação exclusiva impede que dois backups ao
+    mesmo tempo (o do início do servidor e um manual, por exemplo) peguem o mesmo nome.
+    """
+    while True:
+        usados = [int(m[2] or 1) for a in pasta.glob(f"{PREFIXO}{momento}*")
+                  if (m := NOME_OU_RESERVA.match(a.name)) and m[1] == momento]
+        numero = max(usados, default=0) + 1
+        destino = pasta / (f"{PREFIXO}{momento}.db" if numero == 1 else f"{PREFIXO}{momento}-{numero}.db")
+        temporario = destino.with_suffix(".parcial")
+        try:
+            temporario.open("x").close()
+        except FileExistsError:
+            continue  # outro backup reservou este número agora: tenta o próximo
+        if destino.exists():
+            # Outro backup já terminou com este nome depois da nossa consulta: libera e tenta de novo.
+            temporario.unlink()
+            continue
+        return destino, temporario
+
+
+def _copiar(origem, temporario):
     fonte = sqlite3.connect(f"file:{origem.as_posix()}?mode=ro", uri=True, timeout=5)
     try:
         copia = sqlite3.connect(temporario)
@@ -51,12 +85,7 @@ def fazer_backup(origem=None, pasta=None, manter=MANTER_PADRAO, agora=None):
             copia.close()
     finally:
         fonte.close()
-    if resultado != "ok":
-        temporario.unlink(missing_ok=True)
-        raise ValueError(f"A cópia não passou na conferência do SQLite: {resultado}")
-    temporario.replace(destino)
-    _limpar(pasta, manter)
-    return destino
+    return resultado
 
 
 def listar_backups(pasta=None):

@@ -129,3 +129,42 @@ def test_falha_no_backup_nao_impede_o_servidor(db, tmp_path, monkeypatch, capsys
     monkeypatch.setattr(servidor.uvicorn, "run", lambda app, **opcoes: None)
     servidor.main([])
     assert "backup ao iniciar falhou (disco cheio)" in capsys.readouterr().out
+
+
+def test_dois_backups_ao_mesmo_tempo_nao_pegam_o_mesmo_nome(db, tmp_path, monkeypatch):
+    # Simula outro backup que reservou o primeiro nome no mesmo segundo e ainda está copiando.
+    import radar.backup as backup
+    pasta = tmp_path / "b"
+    pasta.mkdir()
+    agora = datetime(2026, 10, 28, 9, 30, 0)
+    (pasta / "radar-2026-10-28_093000.parcial").write_text("")
+    destino = fazer_backup(db, pasta, agora=agora)
+    assert destino.name == "radar-2026-10-28_093000-2.db"
+    # E se o outro termina entre a consulta e a reserva, a reserva nota o nome pronto e passa adiante.
+    original = backup.Path.open
+    terminou = {"feito": False}
+
+    def abre(self, *args, **kwargs):
+        modo = args[0] if args else kwargs.get("mode", "r")
+        if modo == "x" and self.name == "radar-2026-10-28_093000-3.parcial" and not terminou["feito"]:
+            terminou["feito"] = True
+            (pasta / "radar-2026-10-28_093000-3.db").write_bytes(destino.read_bytes())
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(backup.Path, "open", abre)
+    outro = fazer_backup(db, pasta, agora=agora)
+    assert outro.name == "radar-2026-10-28_093000-4.db"
+    assert (pasta / "radar-2026-10-28_093000-3.db").exists()
+    assert not list(pasta.glob("*-3.parcial")) and not list(pasta.glob("*-4.parcial"))
+
+
+def test_falha_na_copia_libera_a_reserva(db, tmp_path, monkeypatch):
+    import radar.backup as backup
+
+    def quebra(origem, temporario):
+        raise sqlite3.OperationalError("disco cheio")
+
+    monkeypatch.setattr(backup, "_copiar", quebra)
+    with pytest.raises(sqlite3.OperationalError):
+        fazer_backup(db, tmp_path / "b")
+    assert list((tmp_path / "b").iterdir()) == []
