@@ -47,7 +47,7 @@ export function Entrada({ aoEntrar, aviso }: { aoEntrar: (usuario: Usuario) => v
             {enviando ? "Entrando…" : "Entrar"}
           </button>
         </form>
-        <p className="legenda">Esqueceu a senha? O Legacia redefine no computador servidor.</p>
+        <p className="legenda">Esqueceu a senha? Peça a quem já tem conta para trocar na tela Contas.</p>
       </div>
     </main>
   );

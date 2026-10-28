@@ -38,6 +38,13 @@ class Sessoes:
         with self._trava:
             self._dados.pop(token, None)
 
+    def fechar_do_usuario(self, usuario_id, exceto=None):
+        """Encerra as sessões de uma conta (senha trocada), menos a do próprio navegador, se indicada."""
+        with self._trava:
+            for token in [t for t, s in self._dados.items()
+                          if t != exceto and s.get("usuario", {}).get("id") == usuario_id]:
+                del self._dados[token]
+
     def _limpar(self):
         # Remove expiradas para a memória não crescer com logins antigos.
         for token in [t for t, s in self._dados.items() if usuario_da_sessao(s) is None]:
