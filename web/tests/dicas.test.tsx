@@ -12,12 +12,25 @@ describe("Dica do campo", () => {
     expect(dica).toHaveAttribute("data-dica", "Valor cobrado pela plataforma sobre cada venda.");
     expect(dica).toHaveAttribute("aria-hidden", "true");
     // O balão só aparece com o mouse sobre o "i" e some ao sair.
-    expect(screen.queryByText("Valor cobrado pela plataforma sobre cada venda.")).toBeNull();
+    const balao = () => document.querySelector(".dica-balao")!;
+    expect(balao()).not.toBeVisible();
     fireEvent.mouseEnter(dica);
-    expect(screen.getByText("Valor cobrado pela plataforma sobre cada venda.")).toHaveClass("dica-balao");
+    expect(balao()).toBeVisible();
+    expect(balao()).toHaveTextContent("Valor cobrado pela plataforma sobre cada venda.");
     expect(screen.getByLabelText("Comissão (%)")).toBeInTheDocument();
     fireEvent.mouseLeave(dica);
-    expect(screen.queryByText("Valor cobrado pela plataforma sobre cada venda.")).toBeNull();
+    expect(balao()).not.toBeVisible();
+  });
+
+  it("abre pelo teclado e descreve o campo para leitores de tela", () => {
+    render(<label><span className="rotulo">Comissão (%)<Dica de="Comissão (%)" /></span><input /></label>);
+    const campo = screen.getByRole("textbox", { name: "Comissão (%)" });
+    expect(campo).toHaveAccessibleDescription("Valor cobrado pela plataforma sobre cada venda.");
+    const balao = document.querySelector(".dica-balao")!;
+    fireEvent.focus(campo);
+    expect(balao).toBeVisible();
+    fireEvent.blur(campo);
+    expect(balao).not.toBeVisible();
   });
 
   it("toda explicação é curta e preenchida", () => {
