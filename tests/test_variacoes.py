@@ -151,3 +151,44 @@ def test_rotas_de_variacao_e_cotacao(db, conta, base):
         assert sku["unidade_venda"] == "caixa" and sku["tamanho"] == "G"
         apagar = cliente.delete(f"/api/variacoes/{v}", params={"codigo": "RAD-000002"})
         assert apagar.status_code == 400 and "há cotações" in apagar.json()["detail"]
+
+
+def test_exclusoes_simultaneas_nao_deixam_produto_sem_variacao(db, base):
+    # Duas pessoas excluem, ao mesmo tempo, cada uma uma das duas variações do produto.
+    import threading
+    import radar.produtos as produtos
+    extra = salvar_variacao(base["p"], cor="Azul", caminho=db)
+    primeira = listar_variacoes(base["p"], db)[0]
+    barreira, erros = threading.Barrier(2), []
+    original = produtos.conectar
+
+    def conectar_sincronizado(caminho=None):
+        conexao = original(caminho)
+        entrada = conexao.__enter__
+
+        class Sincronizada:
+            def __enter__(self):
+                c = entrada()
+                barreira.wait(timeout=5)  # as duas abrem a conexão juntas, antes de conferir
+                return c
+
+            def __exit__(self, *args):
+                return conexao.__exit__(*args)
+        return Sincronizada()
+
+    produtos.conectar = conectar_sincronizado
+    try:
+        def excluir(vid, codigo):
+            try:
+                excluir_variacao(vid, codigo, db)
+            except ValueError as erro:
+                erros.append(str(erro))
+        tarefas = [threading.Thread(target=excluir, args=a) for a in ((primeira["id"], primeira["codigo"]), (extra, "RAD-000002"))]
+        for t in tarefas:
+            t.start()
+        for t in tarefas:
+            t.join()
+    finally:
+        produtos.conectar = original
+    assert len(listar_variacoes(base["p"], db)) == 1
+    assert erros == ["O produto precisa de pelo menos uma variação."]

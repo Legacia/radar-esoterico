@@ -78,6 +78,9 @@ def listar_variacoes(produto_id, caminho=None):
 def excluir_variacao(variacao_id, codigo, caminho=None):
     """Exclui variação sem cotações. O código confirmado precisa conferir; o produto fica com pelo menos uma."""
     with conectar(caminho) as c:
+        # Conferência e exclusão na mesma transação de escrita: duas pessoas excluindo ao mesmo tempo
+        # não deixam o produto sem variação, porque a segunda espera e vê a contagem já atualizada.
+        c.execute("BEGIN IMMEDIATE")
         v = c.execute("SELECT produto_id, codigo FROM variacao WHERE id=?", (variacao_id,)).fetchone()
         if v is None or v["codigo"] != codigo:
             raise ValueError("Variação não encontrada. Ela pode ter sido excluída por outra pessoa; recarregue a tela.")
@@ -133,6 +136,7 @@ def excluir_sku(sku_id, fornecedor_id, codigo, caminho=None):
     tela antiga não apagar outro SKU. Devolve quantas cotações foram apagadas.
     """
     with conectar(caminho) as c:
+        c.execute("BEGIN IMMEDIATE")  # conferência de uso e exclusão sem outra gravação no meio
         sku = c.execute("""SELECT s.fornecedor_id, s.variacao_id, v.codigo FROM sku_fornecedor s
             JOIN variacao v ON v.id=s.variacao_id WHERE s.id=?""", (sku_id,)).fetchone()
         if sku is None or sku["fornecedor_id"] != fornecedor_id or sku["codigo"] != str(codigo):
