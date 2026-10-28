@@ -1,9 +1,10 @@
-# Radar Esotérico — MVP 0.1, Blocos 1, 2 e 3
+# Radar Esotérico — MVP 0.1
 
-Ferramenta local de inteligência comercial da Tenda da Bruxa 2.0.
-Inteligência comercial local: login, fornecedores, produtos, cotações, mercado, margem, planejamento de compras, kits e painel.
+Ferramenta local de inteligência comercial da Tenda da Bruxa 2.0: login, fornecedores, produtos,
+cotações, mercado, margem, planejamento de compras, kits e painel. Interface em React, servida pela
+própria API (FastAPI) no computador servidor; os outros computadores da casa só usam o navegador.
 
-## Instalar no servidor (Windows, Python 3.13)
+## Instalar no servidor (Windows, Python 3.13 e Node.js LTS)
 
 Abra o PowerShell e execute uma linha de cada vez:
 
@@ -11,26 +12,38 @@ Abra o PowerShell e execute uma linha de cada vez:
 cd E:\Projetos\RadarEsoterico
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+cd web
+npm.cmd ci
+npm.cmd run build
+cd ..
 ```
 
 Os comandos usam o Python do ambiente diretamente, sem precisar ativar scripts no PowerShell.
+No PowerShell, use `npm.cmd` (e `npx.cmd`) em vez de `npm`: o PowerShell bloqueia o atalho `npm`
+por padrão, e `npm.cmd` funciona sem mudar a segurança do Windows. O Node.js só é necessário no
+servidor, para montar a interface (`web/dist`, fora do Git). Depois de cada `git pull`, rode de novo
+`npm.cmd run build` dentro de `web`.
 
 ## Criar conta e abrir
 
 ```powershell
 cd E:\Projetos\RadarEsoterico
 .\.venv\Scripts\python.exe -m radar.usuarios criar
-.\.venv\Scripts\python.exe -m streamlit run app/main.py
+.\.venv\Scripts\python.exe -m radar.servidor
 ```
 
 Informe nome, e-mail e uma senha de pelo menos 8 caracteres. A senha é solicitada duas vezes,
 sem aparecer na tela. Não passe senhas como argumentos. As contas reais são criadas pelo
 responsável no servidor; não há cadastro aberto nem envio de e-mails.
 
-Abra http://localhost:8501 no navegador, entre com a conta criada e veja o Painel.
-O botão **Sair** encerra a sessão. O login dura no máximo **8 horas desde a entrada**;
-o prazo é conferido em cada interação e a sessão fica apenas na memória do Streamlit.
-Reiniciar o servidor exige novo login. Cada sessão de navegador entra separadamente.
+Abra http://localhost:8501 no navegador, entre com a conta criada e veja o Painel. Para desligar o
+servidor, aperte `Ctrl + C` na janela do PowerShell. Para aceitar só este computador, use
+`--endereco 127.0.0.1`; para outra porta, `--porta 8502`.
+
+O botão **Sair** encerra a sessão. O login dura no máximo **8 horas desde a entrada**, sem
+prorrogação pelo uso. A sessão fica guardada no servidor; o navegador recebe só um código num
+cookie `HttpOnly` e `SameSite=Strict`. Reiniciar o servidor exige novo login. Cada navegador entra
+separadamente.
 
 Para redefinir uma senha, no servidor:
 
@@ -58,10 +71,26 @@ O banco existe somente no servidor: nunca o copie para os computadores que acess
 ```powershell
 cd E:\Projetos\RadarEsoterico
 .\.venv\Scripts\python.exe -m pytest
+cd web
+npm.cmd test
 ```
 
-Os testes usam bancos temporários e contas fictícias; não alteram `data/radar.db`.
-Também exercitam a interface Streamlit: bloqueio, entrada, saída e expiração.
+`pytest` testa as regras de negócio e a API (inclusive que toda rota, exceto entrar, exige login);
+`npm.cmd test` testa as telas React. Os testes usam bancos temporários e contas fictícias; não
+alteram `data/radar.db`.
+
+Teste de ponta a ponta: abre um navegador de verdade contra a API, com banco temporário e conta
+fictícia (`tests/servidor_e2e.py`), e percorre entrar, o caso da margem (R$ 14,33 e 23,9%),
+fornecedor, produto, cotação, plano de compra e saída.
+
+```powershell
+cd web
+npx.cmd playwright install chromium
+npm.cmd run build
+npm.cmd run e2e
+```
+
+O GitHub roda os três (Python, interface e ponta a ponta) em cada pull request.
 
 ## Dados e manutenção
 
@@ -72,12 +101,12 @@ Dinheiro no banco é armazenado em centavos inteiros; percentuais em texto decim
 sem editar as já publicadas. Migrações e gravações falhas são revertidas.
 
 Banco, backups, planilhas e segredos ficam fora do Git. `.env.example` está vazio;
-este bloco não precisa de variáveis de ambiente. Não há integração real de marketplace.
+esta versão não precisa de variáveis de ambiente. Não há integração real de marketplace.
 Para backup manual, pare o Radar e copie a pasta `data` inteira para um local protegido
 fora do Git; em WAL, não copie apenas o `.db` enquanto o servidor estiver aberto.
 
-Código de negócio: `radar/`. Interface: `app/`. Novas telas devem chamar
-`exigir_login()` antes de mostrar dados, além da barreira na entrada principal.
+Código de negócio: `radar/`. API: `radar/api/` (toda rota nova entra no roteador protegido).
+Interface: `web/` (React + TypeScript), que só chama a API e não refaz contas de negócio.
 
 ## Testar o Bloco 2
 
@@ -182,51 +211,25 @@ e margem; Anna para amostra. As sugestões não enviam mensagens a ninguém.
 O esquema 3 preserva os dados das versões anteriores. Os testes usam bancos temporários,
 inclusive para importar o CSV fictício duas vezes e exercitar critérios de compra e kits.
 
-## API (migração para React, etapa 1)
-
-A interface React ainda está em construção; enquanto isso o Streamlit continua sendo a forma de uso.
-A API já pode ser iniciada para testes:
+## API
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m radar.servidor --endereco 127.0.0.1
 ```
 
 - Rotas em `/api`. Só `POST /api/entrar` funciona sem sessão; todas as outras respondem 401 sem login.
-- Sessão em cookie `HttpOnly` e `SameSite=Strict`, guardada no servidor, com até 8 horas desde a entrada. Sair e reiniciar o servidor encerram a sessão.
+- Sem lista pública de rotas (`/docs` e `/openapi.json` desligados).
 - Não há bloqueio por senhas erradas (decisão do Legacia); a proteção é a senha, guardada só como hash Argon2id.
 - Dinheiro sai como texto decimal (`"55.56"`) ou centavos inteiros; percentuais como fração em texto.
-- Rotas: `entrar`, `sair`, `eu`, `painel`, `configuracao`, `calculadora/simular`, `tarefas` (criar) e `tarefas/{id}` (alterar), `fornecedores` (lista, cadastro, ficha, alteração, etapa, promoção e contatos), `produtos` (catálogo, cadastro, ficha, alteração e cotações), `configuracao` (PUT, salvar parâmetros), `pesquisa` (anúncios, vínculo, cotações do produto e resultado), `importar` (CSV enviado como corpo da requisição), `kits` (lista, criação, ficha, plano e componentes), `estoque/{produto}` e `compras` (lote, orçamento e plano por produto).
 - Dados em formato errado recebem 400 com mensagem em português.
+- Rotas: `entrar`, `sair`, `eu`, `painel`, `tarefas`, `configuracao`, `calculadora/simular`, `fornecedores`,
+  `produtos`, `pesquisa`, `importar`, `kits`, `estoque/{produto}` e `compras`.
 
-## Interface React (migração)
+## Interface React
 
-Entrada com e-mail e senha, barra lateral com as oito telas, tema e componentes comuns.
-As telas chegam uma por vez na etapa 3. Já migradas: **Painel** (indicadores, pendências, funil e plano de 30 dias, com cadastro e conclusão de tarefas), **Fornecedores** (lista por etapa, ficha com checklist de promoção, condições, cotações e contatos), **Produtos e SKUs** (catálogo, cotações com margem e registro de nova cotação), **Calculadora e parâmetros** (simulação de venda e edição dos parâmetros), **Pesquisa de oportunidades** (anúncios, preços observados, vínculo com produto e margem por anúncio), **Importar CSV** (envio do arquivo e relatório por linha, até 5 MB), **Kits** (composição, custo por cotação, plano e estoque por componente) e **Decisão de compra** (orçamento, reserva, plano do lote e os seis critérios). Todas as oito telas estão na versão React; o Streamlit continua disponível até a etapa 5 da migração.
+Oito telas, agrupadas em Visão geral, Fornecimento, Mercado e Decisão: **Painel**, **Fornecedores**,
+**Produtos e SKUs**, **Kits**, **Pesquisa de oportunidades**, **Importar CSV**, **Calculadora e
+parâmetros** e **Decisão de compra**. Cada tela e filtro tem um endereço próprio (`#/pagina?filtro=valor`).
 
-Para montar e ver no servidor (precisa do Node.js LTS só neste computador). No PowerShell, use `npm.cmd`
-em vez de `npm`: o PowerShell bloqueia o atalho `npm` por padrão, e `npm.cmd` funciona sem mudar a segurança.
-
-```powershell
-cd web
-npm.cmd ci
-npm.cmd run build
-cd ..
-.\.venv\Scripts\python.exe -m radar.servidor --porta 8502
-```
-
-Depois abra `http://localhost:8502` (a porta 8501 continua com o Streamlit até a etapa 5).
-Testes da interface: `npm.cmd test` dentro de `web/`.
-
-Teste de ponta a ponta (etapa 4): abre um navegador de verdade contra a API, com banco temporário e conta
-fictícia (`tests/servidor_e2e.py`), e percorre entrar, o caso da margem (R$ 14,33 e 23,9%), fornecedor,
-produto, cotação, plano de compra e saída. Nunca toca `data/radar.db`.
-
-```powershell
-cd web
-npx.cmd playwright install chromium
-npm.cmd run build
-npm.cmd run e2e
-```
-
-Para desenvolver com recarga automática: API em `--porta 8502` e `npm.cmd run dev` em `web/` (abre em `http://localhost:5173`).
+Para desenvolver com recarga automática: API em `--porta 8502` e `npm.cmd run dev` em `web/`
+(abre em `http://localhost:5173`).
