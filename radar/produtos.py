@@ -3,7 +3,8 @@ from datetime import date
 from decimal import Decimal
 
 from radar.banco import conectar
-from radar.margem import calcular
+from radar.apoio import SQL_EMBALAGEM_PRODUTO
+from radar.margem import calcular, com_embalagem
 from radar.valores import centavos, data_iso, obrigatorio
 
 
@@ -34,7 +35,8 @@ def _skus_atuais(c, fornecedor_id=None, produto_id=None):
         SELECT s.*, ROW_NUMBER() OVER (
             PARTITION BY fornecedor_id, codigo COLLATE NOCASE ORDER BY data_cotacao DESC, id DESC) AS posicao
         FROM sku_fornecedor s)
-        SELECT s.*, p.nome AS produto, f.nome AS fornecedor FROM cotacoes s
+        SELECT s.*, p.nome AS produto, f.nome AS fornecedor,
+            """ + SQL_EMBALAGEM_PRODUTO.format("s.produto_id") + """ AS embalagem_centavos FROM cotacoes s
         JOIN produto p ON p.id=s.produto_id JOIN fornecedor f ON f.id=s.fornecedor_id
         WHERE s.posicao=1"""
     argumentos = []
@@ -120,10 +122,12 @@ def registrar_cotacao(fornecedor_id, produto_id, codigo, custo, quantidade_minim
 
 
 def estimar_margem(sku, parametros):
+    """Margem com o preço conservador da cotação e a embalagem do produto (itens de apoio ou padrão)."""
     if sku["preco_venda_centavos"] is None:
         return None
     return calcular(Decimal(sku["preco_venda_centavos"]) / 100,
-                    Decimal(sku["custo_unitario_centavos"]) / 100, parametros)
+                    Decimal(sku["custo_unitario_centavos"]) / 100,
+                    com_embalagem(parametros, sku.get("embalagem_centavos")))
 
 
 def cotacao_antiga(data_cotacao, limite_dias, hoje=None):

@@ -9,11 +9,12 @@ def test_esquema_completo_wal_timeout_e_chaves(db):
     with conectar(db) as c:
         tabelas = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         assert tabelas == {"usuario", "fornecedor", "interacao", "produto", "sku_fornecedor",
-                           "anuncio", "preco_observado", "kit", "kit_item", "cenario_margem", "tarefa", "configuracao", "orcamento", "plano_compra"}
+                           "anuncio", "preco_observado", "kit", "kit_item", "cenario_margem", "tarefa", "configuracao", "orcamento", "plano_compra",
+                           "item_apoio", "produto_apoio", "kit_apoio"}
         assert c.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
         assert c.execute("PRAGMA busy_timeout").fetchone()[0] == 5000
         assert c.execute("PRAGMA foreign_keys").fetchone()[0] == 1
-        assert c.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert c.execute("PRAGMA user_version").fetchone()[0] == 4
 
 
 def test_reinicializar_preserva_dados(db):
@@ -32,7 +33,7 @@ def test_migracao_futura_transacional(db, monkeypatch):
     with pytest.raises(sqlite3.OperationalError):
         inicializar(db)
     with conectar(db) as c:
-        assert c.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert c.execute("PRAGMA user_version").fetchone()[0] == 4
         assert c.execute("SELECT name FROM sqlite_master WHERE name='teste_migracao'").fetchone() is None
 
 

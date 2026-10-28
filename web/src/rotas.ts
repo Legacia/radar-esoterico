@@ -14,6 +14,7 @@ export const SECOES: Secao[] = [
     { chave: "fornecedores", titulo: "Fornecedores", descricao: "Ciclo, ficha, cotações e checklist de promoção." },
     { chave: "produtos", titulo: "Produtos e SKUs", descricao: "Catálogo de candidatos e cotações." },
     { chave: "kits", titulo: "Kits", descricao: "Composição e estoque por componente." },
+    { chave: "apoio", titulo: "Itens de apoio", descricao: "Embalagens, caixas e sacolas, com custo e fornecedor." },
   ] },
   { titulo: "Mercado", paginas: [
     { chave: "pesquisa", titulo: "Pesquisa de oportunidades", descricao: "Anúncios, preços e margens por anúncio." },

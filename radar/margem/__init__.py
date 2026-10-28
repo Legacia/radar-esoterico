@@ -1,5 +1,5 @@
 """Fórmulas puras, sem interface nem valores comerciais embutidos."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal, ROUND_CEILING, ROUND_HALF_UP
 
 CENTAVO = Decimal("0.01")
@@ -56,3 +56,13 @@ def preco_minimo(custo, parametros):
         raise ValueError("Não existe preço mínimo com esses percentuais: a soma de comissão, tributo e alvo deve ser menor que 100%.")
     valor = (custo + parametros.tarifa_fixa + parametros.embalagem + parametros.outros) / denominador
     return valor.quantize(CENTAVO, rounding=ROUND_CEILING)
+
+
+def com_embalagem(parametros, embalagem_centavos):
+    """Troca a embalagem configurada pela soma dos itens de apoio do produto ou kit.
+
+    Sem itens indicados (None), vale a embalagem padrão da configuração.
+    """
+    if embalagem_centavos is None:
+        return parametros
+    return replace(parametros, embalagem=Decimal(embalagem_centavos) / 100)

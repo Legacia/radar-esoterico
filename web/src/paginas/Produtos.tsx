@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { pedir } from "../api";
 import { Abas } from "../componentes/Abas";
 import { Aviso, Painel as Caixa, Selo } from "../componentes/basicos";
+import { EmbalagemApoio, type Apoio } from "../componentes/EmbalagemApoio";
 import { useFicha } from "../componentes/ficha";
 import { Gaveta } from "../componentes/Gaveta";
 import { mensagemDeErro, useGravacao, type Executar } from "../componentes/gravacao";
@@ -24,7 +25,7 @@ export type Produto = {
   validado: number;
   estoque_atual: number;
 };
-type FichaProduto = Produto & { limite_cotacao_dias: number; skus: LinhaSku[] };
+type FichaProduto = Produto & { limite_cotacao_dias: number; skus: LinhaSku[]; apoio: Apoio; embalagem_padrao: string };
 type FornecedorOpcao = { id: number; nome: string };
 
 const CONFERENCIAS: [keyof Produto, string, string][] = [
@@ -136,6 +137,10 @@ function FichaProduto({ id, fornecedores, executar, ocupado, gravacoes, aoMudar,
             { titulo: `Cotações (${ficha.skus.length})`, conteudo: (
               <TabelaSkus skus={ficha.skus} limiteDias={ficha.limite_cotacao_dias} excluir={{ ocupado: bloqueado,
                 aoExcluir: (sku) => gravar(() => pedir(caminhoExcluirSku(sku), { metodo: "DELETE" }), `SKU ${sku.codigo} excluído.`) }} />
+            ) },
+            { titulo: "Embalagem e apoio", conteudo: (
+              <EmbalagemApoio apoio={ficha.apoio} padrao={ficha.embalagem_padrao} caminho={`/produtos/${id}/apoio`}
+                quem="do produto" ocupado={bloqueado} gravar={gravar} />
             ) },
             { titulo: "Registrar cotação", conteudo: (
               <FormularioCotacao key={versao} fornecedores={fornecedores} ocupado={bloqueado}

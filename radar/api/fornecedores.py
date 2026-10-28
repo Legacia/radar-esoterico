@@ -10,7 +10,7 @@ from pydantic import BaseModel, StrictBool
 from radar.api import protegido, texto
 from radar.fornecedores import (ETAPAS, alterar_etapa, avaliar_promocao, excluir_fornecedor, listar_fornecedores,
     listar_interacoes, obter_fornecedor, promover, registrar_interacao, salvar_fornecedor)
-from radar.margem import preco_minimo
+from radar.margem import com_embalagem, preco_minimo
 from radar.margem.configuracao import obter_configuracao
 from radar.produtos import cotacao_antiga, estimar_margem, listar_skus
 from radar.valores import dinheiro_texto
@@ -45,8 +45,9 @@ class Contato(BaseModel):
 def linha_sku(sku, config):
     """Cotação atual com margem estimada e preço mínimo para o alvo configurado."""
     margem = estimar_margem(sku, config.parametros)
+    parametros = com_embalagem(config.parametros, sku.get("embalagem_centavos"))
     try:
-        minimo, aviso = preco_minimo(Decimal(sku["custo_unitario_centavos"]) / 100, config.parametros), None
+        minimo, aviso = preco_minimo(Decimal(sku["custo_unitario_centavos"]) / 100, parametros), None
     except ValueError as erro:
         minimo, aviso = None, str(erro)
     return {
@@ -59,6 +60,8 @@ def linha_sku(sku, config):
         "contribuicao": texto(margem.contribuicao) if margem else None,
         "margem_pct": texto(margem.margem_pct) if margem else None,
         "preco_minimo": texto(minimo), "aviso_preco_minimo": aviso,
+        # Embalagem usada na conta: soma dos itens de apoio do produto, ou a padrão da configuração.
+        "embalagem": texto(parametros.embalagem.quantize(Decimal("0.01"))), "embalagem_propria": sku.get("embalagem_centavos") is not None,
     }
 
 

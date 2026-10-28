@@ -4,7 +4,8 @@ Margens e preço mínimo de cada cotação vêm de `linha_sku`, a mesma usada na
 """
 from pydantic import BaseModel, StrictBool, StrictInt
 
-from radar.api import protegido
+from radar.api import CENTAVO, protegido, texto
+from radar.api.apoio import apoio_de
 from radar.api.fornecedores import data_do_texto, linha_sku
 from radar.banco import conectar
 from radar.fornecedores import listar_fornecedores
@@ -68,7 +69,9 @@ def ficha(produto_id: int):
     produto = _obter(produto_id)
     config = obter_configuracao()
     return {**_produto(produto), "limite_cotacao_dias": config.limite_cotacao_dias,
-            "skus": [linha_sku(s, config) for s in listar_skus(produto_id=produto_id)]}
+            "skus": [linha_sku(s, config) for s in listar_skus(produto_id=produto_id)],
+            "apoio": apoio_de("produto", produto_id),
+            "embalagem_padrao": texto(config.parametros.embalagem.quantize(CENTAVO))}
 
 
 @protegido.put("/produtos/{produto_id}")

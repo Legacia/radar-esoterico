@@ -84,13 +84,13 @@ Dinheiro entre API e interface trafega como **texto decimal** (`"59.90"`) ou cen
 2. **Fornecedores**: lista por etapa, ficha, SKUs cotados, checklist de promoção, histórico de contatos.
 3. **Produtos e SKUs**: catálogo dos candidatos, ligado às cotações.
 4. **Pesquisa de oportunidades**: busca, anúncios e preços, margem por anúncio a partir do custo do fornecedor, preço mínimo para atingir a margem-alvo. Abas: Pesquisa, Preços, Margens.
-5. **Kits**: composição por produto, estoque controlado por componente.
+5. **Kits**: composição por produto, estoque controlado por componente, embalagem e margem do kit.
 6. **Decisão de compra**: orçamento, reserva, critérios por produto, quantidade e valor comprometido.
 7. **Importar**: CSV.
 
 ## Modelo de dados
 
-Tabelas: `fornecedor`, `interacao`, `sku_fornecedor`, `produto`, `anuncio`, `preco_observado`, `kit`, `kit_item`, `cenario_margem`, `usuario`, `tarefa`.
+Tabelas: `fornecedor`, `interacao`, `sku_fornecedor`, `produto`, `anuncio`, `preco_observado`, `kit`, `kit_item`, `cenario_margem`, `usuario`, `tarefa`, `item_apoio`, `produto_apoio`, `kit_apoio`.
 
 `tarefa` guarda as tarefas do plano de 30 dias para o Painel (aprovada pelo Legacia em 26/10/2026).
 
@@ -159,6 +159,8 @@ Parâmetros de exemplo (todos **editáveis** na tela, nunca fixos no código):
 Caso de teste obrigatório: kit de 3 incensos + suporte, preço R$ 59,90, custo R$ 20,00, com os parâmetros acima, dá contribuição de **R$ 14,33** e margem de **23,9%**.
 
 Frete e despesas fixas não entram neste cálculo. Vender 100 kits não significa ganhar R$ 1.433 líquidos.
+
+Embalagem por produto e por kit (decisões do Legacia em 28/10/2026): caixas, sacolas e outros materiais ficam cadastrados como **itens de apoio** (custo, data e fornecedor opcional). Cada produto indica os seus itens e quantidades; a soma substitui a `embalagem` configurada em todas as contas de margem daquele produto. Sem itens indicados, vale a embalagem configurada (o caso obrigatório continua com R$ 2,50). Cada kit indica a própria embalagem e **não** herda a dos componentes, porque pode exigir uma embalagem maior. Item de apoio indicado em produto ou kit não pode ser excluído.
 
 ## Critérios para autorizar a compra do primeiro estoque
 
@@ -284,6 +286,12 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 - `kit_item.sku_fornecedor_id` registra a cotação de custo do componente; `kit.quantidade_planejada` permite somar necessidades de componentes compartilhados sem baixa automática de estoque.
 - Novos módulos de negócio: `radar/mercado.py`, `radar/compras.py`, `radar/kits.py`, `radar/painel.py` e importador em `radar/importacao/`. Telas (hoje em React): Pesquisa, Importar, Decisão de compra e Kits; o Painel mostra indicadores, tarefas e pendências.
 - Único CSV de exemplo: `exemplos/anuncios_ficticios.csv`, sem informação real. Formato e decisões confirmadas sobre critérios de compra, estoque e pendências estão documentados no README.
+
+## Itens de apoio (28/10/2026)
+
+- Migração 4: tabelas `item_apoio` (nome, `fornecedor_id` opcional, `custo_centavos`, `data_cotacao`), `produto_apoio` e `kit_apoio` (quantidade inteira de 1 a 1000 por unidade vendida) e coluna opcional `kit.preco_venda_centavos` para estimar a margem do kit.
+- `radar/apoio.py` guarda cadastro, indicação e soma; `radar/margem.com_embalagem` troca a embalagem dos parâmetros. `_skus_atuais`, Decisão de compra e Pesquisa carregam a embalagem do produto; `radar/kits.margem_kit` calcula a margem do kit com a embalagem dele.
+- Tela **Itens de apoio** em Fornecimento; aba **Embalagem e apoio** na ficha do produto; caixas **Margem do kit** e **Embalagem do kit** na tela Kits.
 
 ## Interface (revisão visual de 27/10/2026)
 

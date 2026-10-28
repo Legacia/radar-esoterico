@@ -6,10 +6,11 @@ from pydantic import BaseModel, StrictInt
 
 from radar.api import protegido, texto
 from radar.banco import conectar
-from radar.kits import (ajustar_estoque, consultar_kit, listar_kits, necessidade_conjunta, planejar_kits,
+from radar.api.apoio import apoio_de
+from radar.kits import (ajustar_estoque, avaliar_margem_kit, consultar_kit, definir_preco, listar_kits, necessidade_conjunta, planejar_kits,
     remover_componente, salvar_componente, salvar_kit)
 from radar.produtos import listar_produtos
-from radar.valores import obrigatorio
+from radar.valores import dinheiro_texto, obrigatorio
 
 
 class NovoKit(BaseModel):
@@ -19,6 +20,7 @@ class NovoKit(BaseModel):
 class PlanoKit(BaseModel):
     nome: str
     quantidade_planejada: StrictInt
+    preco_venda: str | None = None
 
 
 class Componente(BaseModel):
@@ -47,7 +49,7 @@ def criar(dados: NovoKit):
 @protegido.get("/kits/{kit_id}")
 def ficha(kit_id: int):
     with conectar() as c:
-        kit = c.execute("SELECT id,nome,quantidade_planejada FROM kit WHERE id=?", (kit_id,)).fetchone()
+        kit = c.execute("SELECT id,nome,quantidade_planejada,preco_venda_centavos FROM kit WHERE id=?", (kit_id,)).fetchone()
     if kit is None:
         raise ValueError("Kit não encontrado.")
     kit = dict(kit)
@@ -57,7 +59,11 @@ def ficha(kit_id: int):
               "data_cotacao", "sku_fornecedor_id")
     return {**kit, "componentes": [{c: i[c] for c in campos} for i in consulta["componentes"]],
             "custo_unitario": texto(consulta["custo_unitario"]),
-            "custo_lote": texto(consulta["custo_lote"]) if kit["quantidade_planejada"] else None}
+            "custo_lote": texto(consulta["custo_lote"]) if kit["quantidade_planejada"] else None,
+            "apoio": apoio_de("kit", kit_id),
+            # Margem com a embalagem do próprio kit (itens de apoio do kit ou a padrão).
+            "margem": {chave: valor if isinstance(valor, (bool, str)) or valor is None else texto(valor)
+                       for chave, valor in avaliar_margem_kit(kit_id).items()}}
 
 
 @protegido.put("/kits/{kit_id}")
@@ -67,7 +73,14 @@ def plano(kit_id: int, dados: PlanoKit):
     with conectar() as c:
         if not c.execute("SELECT 1 FROM kit WHERE id=?", (kit_id,)).fetchone():
             raise ValueError("Kit não encontrado.")
+    preco = None
+    if "preco_venda" in dados.model_fields_set and dados.preco_venda and dados.preco_venda.strip():
+        preco = dinheiro_texto(dados.preco_venda)
+        if preco == 0:
+            raise ValueError("O preço conservador deve ser maior que zero, ou ficar em branco.")
     planejar_kits(kit_id, dados.quantidade_planejada)
+    if "preco_venda" in dados.model_fields_set:
+        definir_preco(kit_id, preco)
     salvar_kit(nome, kit_id)
     return {"id": kit_id}
 

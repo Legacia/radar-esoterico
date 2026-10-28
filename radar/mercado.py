@@ -4,7 +4,8 @@ from decimal import Decimal
 from urllib.parse import urlsplit
 
 from radar.banco import conectar
-from radar.margem import calcular, preco_minimo
+from radar.apoio import embalagem_produto
+from radar.margem import calcular, com_embalagem, preco_minimo
 from radar.margem.configuracao import _ler
 from radar.valores import centavos, data_iso, obrigatorio
 
@@ -89,7 +90,8 @@ def pesquisar(produto_id, cotacao_id, marketplace="", termo="", caminho=None):
         cotacao = c.execute("SELECT * FROM sku_fornecedor WHERE id=? AND produto_id=?", (cotacao_id, produto_id)).fetchone()
         if not cotacao:
             raise ValueError("Selecione uma cotação do produto pesquisado.")
-        p = _ler(c).parametros
+        # Embalagem do produto pesquisado: itens de apoio indicados ou a padrão.
+        p = com_embalagem(_ler(c).parametros, embalagem_produto(c, produto_id))
         # Cada anúncio entra uma vez nas estatísticas; o histórico aparece à parte.
         sql = """WITH precos AS (SELECT *, ROW_NUMBER() OVER (
             PARTITION BY anuncio_id ORDER BY data DESC,id DESC) AS posicao FROM preco_observado)
@@ -117,4 +119,4 @@ def pesquisar(produto_id, cotacao_id, marketplace="", termo="", caminho=None):
         minimo = None
     return {"linhas": linhas, "historico": historico, "mediana": mediana_precos([r["preco"] for r in linhas]),
             "preco_minimo": minimo, "no_alvo": sum(r["margem"] >= p.margem_alvo_pct for r in linhas),
-            "custo": custo, "data_cotacao": cotacao["data_cotacao"]}
+            "custo": custo, "data_cotacao": cotacao["data_cotacao"], "embalagem": p.embalagem}
