@@ -192,7 +192,7 @@ Não comprar só porque o fornecedor oferece desconto: antes, descobrir se o pre
 
 - O repositório é **privado**, mas mesmo assim: banco, backups, CSVs, planilhas e chaves **nunca** entram no Git. O `.gitignore` já cobre isso. Se um arquivo desses aparecer no `git status`, pare e avise.
 - Nunca colocar senha, chave de API ou token no código. Usar arquivo `.env` (fora do Git); só o `.env.example`, em branco, sobe.
-- Backup do banco é feito fora do Git.
+- Backup do banco é feito fora do Git: `python -m radar.backup` (cópia online do SQLite, conferida, guardando as 30 mais recentes em `backups/`), também executado a cada início do servidor.
 
 ## Acesso pela rede
 
