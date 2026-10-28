@@ -59,3 +59,33 @@ jobs:
         run: npm test
       - name: Montar
         run: npm run build
+
+  ponta-a-ponta:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Instalar dependências do Python
+        run: |
+          python -m venv .venv
+          .venv\Scripts\python.exe -m pip install -r requirements.txt
+      - name: Instalar dependências da interface e o navegador de teste
+        working-directory: web
+        run: |
+          npm ci
+          npx playwright install chromium
+      - name: Montar a interface
+        working-directory: web
+        run: npm run build
+      - name: Teste de ponta a ponta (banco temporário, conta fictícia)
+        working-directory: web
+        run: npm run e2e

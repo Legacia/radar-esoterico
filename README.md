@@ -199,20 +199,34 @@ A API já pode ser iniciada para testes:
 - Rotas: `entrar`, `sair`, `eu`, `painel`, `configuracao`, `calculadora/simular`, `tarefas` (criar) e `tarefas/{id}` (alterar), `fornecedores` (lista, cadastro, ficha, alteração, etapa, promoção e contatos), `produtos` (catálogo, cadastro, ficha, alteração e cotações), `configuracao` (PUT, salvar parâmetros), `pesquisa` (anúncios, vínculo, cotações do produto e resultado), `importar` (CSV enviado como corpo da requisição), `kits` (lista, criação, ficha, plano e componentes), `estoque/{produto}` e `compras` (lote, orçamento e plano por produto).
 - Dados em formato errado recebem 400 com mensagem em português.
 
-## Interface React (migração, etapa 2)
+## Interface React (migração)
 
-Estrutura pronta: entrada com e-mail e senha, barra lateral com as oito telas, tema e componentes comuns.
+Entrada com e-mail e senha, barra lateral com as oito telas, tema e componentes comuns.
 As telas chegam uma por vez na etapa 3. Já migradas: **Painel** (indicadores, pendências, funil e plano de 30 dias, com cadastro e conclusão de tarefas), **Fornecedores** (lista por etapa, ficha com checklist de promoção, condições, cotações e contatos), **Produtos e SKUs** (catálogo, cotações com margem e registro de nova cotação), **Calculadora e parâmetros** (simulação de venda e edição dos parâmetros), **Pesquisa de oportunidades** (anúncios, preços observados, vínculo com produto e margem por anúncio), **Importar CSV** (envio do arquivo e relatório por linha, até 5 MB), **Kits** (composição, custo por cotação, plano e estoque por componente) e **Decisão de compra** (orçamento, reserva, plano do lote e os seis critérios). Todas as oito telas estão na versão React; o Streamlit continua disponível até a etapa 5 da migração.
 
-Para montar e ver no servidor (precisa do Node.js LTS só neste computador):
+Para montar e ver no servidor (precisa do Node.js LTS só neste computador). No PowerShell, use `npm.cmd`
+em vez de `npm`: o PowerShell bloqueia o atalho `npm` por padrão, e `npm.cmd` funciona sem mudar a segurança.
 
 ```powershell
 cd web
-npm ci
-npm run build
+npm.cmd ci
+npm.cmd run build
 cd ..
-.\.venv\Scripts\python.exe -m radar.servidor --endereco 127.0.0.1
+.\.venv\Scripts\python.exe -m radar.servidor --porta 8502
 ```
 
-Depois abra `http://127.0.0.1:8501`. Testes da interface: `npm test` dentro de `web/`.
-Para desenvolver com recarga automática: API em `--porta 8502` e `npm run dev` em `web/` (abre em `http://localhost:5173`).
+Depois abra `http://localhost:8502` (a porta 8501 continua com o Streamlit até a etapa 5).
+Testes da interface: `npm.cmd test` dentro de `web/`.
+
+Teste de ponta a ponta (etapa 4): abre um navegador de verdade contra a API, com banco temporário e conta
+fictícia (`tests/servidor_e2e.py`), e percorre entrar, o caso da margem (R$ 14,33 e 23,9%), fornecedor,
+produto, cotação, plano de compra e saída. Nunca toca `data/radar.db`.
+
+```powershell
+cd web
+npx.cmd playwright install chromium
+npm.cmd run build
+npm.cmd run e2e
+```
+
+Para desenvolver com recarga automática: API em `--porta 8502` e `npm.cmd run dev` em `web/` (abre em `http://localhost:5173`).
