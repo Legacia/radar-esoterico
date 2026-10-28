@@ -13,6 +13,8 @@ import { Tabela, type Coluna } from "../componentes/Tabela";
 import { TabelaSkus, caminhoExcluirSku, type LinhaSku } from "../componentes/TabelaSkus";
 import { dataBr, hojeIso, percentual, reaisDeCentavos, textoDeCentavos } from "../formato";
 import { enderecoDe, useRota } from "../rotas";
+import { Dica } from "../componentes/Dica";
+import type { ChaveDica } from "../dicas";
 
 type Resumo = { id: number; nome: string; status: string; prazo: string | null; condicao_pagamento: string | null; data_ultima_cotacao: string | null };
 type Contato = { id: number; data: string; canal: string; resumo: string; situacao_resposta: "aguardando" | "recebida" | null };
@@ -264,12 +266,12 @@ function Checklist({ ficha, faltam, setFaltam, etapas, ocupado, gravar, executar
       <form className="formulario grupo" onSubmit={mudarEtapa}>
         <h3 className="subtitulo">Mudar etapa de acompanhamento</h3>
         <div className="campos-2">
-          <label>Etapa de acompanhamento
+          <label><span className="rotulo">Etapa de acompanhamento<Dica de="Etapa de acompanhamento" /></span>
             <select value={etapa} onChange={(e) => setEtapa(e.target.value)}>
               {opcoes.map((e) => <option key={e}>{e}</option>)}
             </select>
           </label>
-          <label>Motivo para descartar ou pausar
+          <label><span className="rotulo">Motivo para descartar ou pausar<Dica de="Motivo para descartar ou pausar" /></span>
             <input value={motivo} onChange={(e) => setMotivo(e.target.value)} required={etapa === "Descartado ou pausado"} />
           </label>
         </div>
@@ -324,20 +326,20 @@ export function FormularioFornecedor({ ficha, ocupado, aoEnviar }: {
     <form className="formulario" onSubmit={enviar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <div className="campos-2">
-        <label>Nome do fornecedor<input required {...campo("nome")} /></label>
-        <label>CNPJ<input {...campo("cnpj")} /></label>
-        <label>Contato<input {...campo("contato")} /></label>
-        <label>Pedido mínimo (R$)<input inputMode="decimal" {...campo("pedido_minimo")} /></label>
-        <label>Prazo<input {...campo("prazo")} /></label>
-        <label>Condição de pagamento<input {...campo("condicao_pagamento")} /></label>
+        <label><span className="rotulo">Nome do fornecedor<Dica de="Nome do fornecedor" /></span><input required {...campo("nome")} /></label>
+        <label><span className="rotulo">CNPJ<Dica de="CNPJ" /></span><input {...campo("cnpj")} /></label>
+        <label><span className="rotulo">Contato<Dica de="Contato" /></span><input {...campo("contato")} /></label>
+        <label><span className="rotulo">Pedido mínimo (R$)<Dica de="Pedido mínimo (R$)" /></span><input inputMode="decimal" {...campo("pedido_minimo")} /></label>
+        <label><span className="rotulo">Prazo<Dica de="Prazo" /></span><input {...campo("prazo")} /></label>
+        <label><span className="rotulo">Condição de pagamento<Dica de="Condição de pagamento" /></span><input {...campo("condicao_pagamento")} /></label>
       </div>
       <fieldset className="grupo">
-        <legend>Verificações manuais</legend>
+        <legend>Verificações manuais<Dica de="Verificações manuais" /></legend>
         <p className="legenda">Confirmações feitas por vocês após verificar as informações.</p>
         {VERIFICACOES.map(([chave, rotulo]) => (
           <label key={chave} className="tarefa">
             <input type="checkbox" checked={dados[chave] as boolean} onChange={(e) => setDados({ ...dados, [chave]: e.target.checked })} />
-            {rotulo}
+            {rotulo}<Dica de={rotulo as ChaveDica} />
           </label>
         ))}
       </fieldset>
@@ -381,11 +383,11 @@ function Contatos({ ficha, ocupado, aoEnviar }: { ficha: Ficha; ocupado: boolean
         <h3 className="subtitulo">Registrar contato</h3>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         <div className="campos-2">
-          <label>Data do contato
+          <label><span className="rotulo">Data do contato<Dica de="Data do contato" /></span>
             <input type="date" required max={hojeIso()} value={dados.data} onChange={(e) => setDados({ ...dados, data: e.target.value })} />
           </label>
-          <label>Canal<input required value={dados.canal} onChange={(e) => setDados({ ...dados, canal: e.target.value })} /></label>
-          <label>Situação da resposta
+          <label><span className="rotulo">Canal<Dica de="Canal" /></span><input required value={dados.canal} onChange={(e) => setDados({ ...dados, canal: e.target.value })} /></label>
+          <label><span className="rotulo">Situação da resposta<Dica de="Situação da resposta" /></span>
             <select value={dados.situacao_resposta ?? ""} onChange={(e) => setDados({ ...dados, situacao_resposta: e.target.value || null })}>
               <option value="">Não informar</option>
               <option value="aguardando">Aguardando resposta</option>
@@ -393,7 +395,7 @@ function Contatos({ ficha, ocupado, aoEnviar }: { ficha: Ficha; ocupado: boolean
             </select>
           </label>
         </div>
-        <label>Resumo do contato
+        <label><span className="rotulo">Resumo do contato<Dica de="Resumo do contato" /></span>
           <textarea required rows={3} value={dados.resumo} onChange={(e) => setDados({ ...dados, resumo: e.target.value })} />
         </label>
         <div><button type="submit" className="botao botao-principal" disabled={ocupado}>Adicionar contato</button></div>

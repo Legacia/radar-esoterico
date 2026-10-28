@@ -6,6 +6,7 @@ import { Aviso, Indicador, Painel as Caixa } from "../componentes/basicos";
 import { mensagemDeErro, useGravacao } from "../componentes/gravacao";
 import { Tabela, type Coluna } from "../componentes/Tabela";
 import { enderecoDe } from "../rotas";
+import { Dica } from "../componentes/Dica";
 
 type Erro = { linha: number; erro: string };
 export type Relatorio = { importadas: number; repetidas: number; erros: Erro[] };
@@ -51,7 +52,7 @@ export function Importar() {
         </p>
         <form className="formulario" onSubmit={enviar}>
           {erro && <Aviso tipo="erro">{erro}</Aviso>}
-          <label>Arquivo CSV
+          <label><span className="rotulo">Arquivo CSV<Dica de="Arquivo CSV" /></span>
             <input ref={campo} type="file" accept=".csv,text/csv" onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} />
           </label>
           <div>

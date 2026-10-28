@@ -291,9 +291,13 @@ inclusive para importar o CSV fictício duas vezes e exercitar critérios de com
 
 ## Interface React
 
-Oito telas, agrupadas em Visão geral, Fornecimento, Mercado e Decisão: **Painel**, **Fornecedores**,
-**Produtos e SKUs**, **Kits**, **Pesquisa de oportunidades**, **Importar CSV**, **Calculadora e
-parâmetros** e **Decisão de compra**. Cada tela e filtro tem um endereço próprio (`#/pagina?filtro=valor`).
+Dez telas, agrupadas em Visão geral, Fornecimento, Mercado e Decisão: **Painel**, **Contas**,
+**Fornecedores**, **Produtos e SKUs**, **Kits**, **Itens de apoio**, **Pesquisa de oportunidades**,
+**Importar CSV**, **Calculadora e parâmetros** e **Decisão de compra**. Cada tela e filtro tem um
+endereço próprio (`#/pagina?filtro=valor`).
+
+Cada campo tem um **i** ao lado do nome: passe o mouse sobre ele para ver uma explicação rápida.
+Os textos ficam em `web/src/dicas.ts`, num lugar só, para ajustar a redação sem mexer nas telas.
 
 Para desenvolver com recarga automática: API em `--porta 8502` e `npm.cmd run dev` em `web/`
 (abre em `http://localhost:5173`).

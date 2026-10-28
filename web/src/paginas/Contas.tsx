@@ -7,6 +7,7 @@ import { Gaveta } from "../componentes/Gaveta";
 import { mensagemDeErro, useGravacao } from "../componentes/gravacao";
 import { useNotificar } from "../componentes/Notificacoes";
 import { Tabela } from "../componentes/Tabela";
+import { Dica } from "../componentes/Dica";
 
 export type Conta = { id: number; nome: string; email: string };
 
@@ -60,10 +61,10 @@ export function Contas() {
 function CamposSenha({ senha, repetir, aoMudar }: { senha: string; repetir: string; aoMudar: (s: string, r: string) => void }) {
   return (
     <div className="campos-2">
-      <label>Senha (mínimo 8 caracteres)
+      <label><span className="rotulo">Senha (mínimo 8 caracteres)<Dica de="Senha (mínimo 8 caracteres)" /></span>
         <input required type="password" autoComplete="new-password" minLength={8} value={senha} onChange={(e) => aoMudar(e.target.value, repetir)} />
       </label>
-      <label>Repita a senha
+      <label><span className="rotulo">Repita a senha<Dica de="Repita a senha" /></span>
         <input required type="password" autoComplete="new-password" value={repetir} onChange={(e) => aoMudar(senha, e.target.value)} />
       </label>
     </div>
@@ -97,8 +98,8 @@ function NovaConta({ ocupado, aoEnviar }: {
       <form className="formulario" onSubmit={enviar}>
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         <div className="campos-2">
-          <label>Nome<input required value={nome} onChange={(e) => setNome(e.target.value)} /></label>
-          <label>E-mail<input required type="email" autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+          <label><span className="rotulo">Nome<Dica de="Nome" /></span><input required value={nome} onChange={(e) => setNome(e.target.value)} /></label>
+          <label><span className="rotulo">E-mail<Dica de="E-mail" /></span><input required type="email" autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
         </div>
         <CamposSenha senha={senha} repetir={repetir} aoMudar={(s, r) => { setSenha(s); setRepetir(r); }} />
         <p className="legenda">O e-mail serve só para entrar; o Radar não envia mensagens.</p>

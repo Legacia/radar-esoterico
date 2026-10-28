@@ -11,6 +11,7 @@ import { useNotificar } from "../componentes/Notificacoes";
 import { Tabela, type Coluna } from "../componentes/Tabela";
 import { dataBr, percentual, reais, reaisDeCentavos, textoDeCentavos } from "../formato";
 import { enderecoDe, useRota } from "../rotas";
+import { Dica } from "../componentes/Dica";
 
 type KitResumo = { id: number; nome: string; quantidade_planejada: number };
 type ProdutoEstoque = { id: number; nome: string; estoque_atual: number };
@@ -67,7 +68,7 @@ export function Kits() {
       <div className="cabecalho-acoes">
         <button type="button" className="botao botao-principal" disabled={gravacao.ocupado} onClick={() => setCriando(true)}>Criar kit</button>
         {base.kits.length > 0 && (
-          <label className="em-linha">Kit
+          <label className="em-linha"><span className="rotulo">Kit<Dica de="Kit" /></span>
             <select value={kitId} onChange={(e) => escolher(Number(e.target.value))}>
               {base.kits.map((k) => <option key={k.id} value={k.id}>{k.nome} · {k.quantidade_planejada} planejados</option>)}
             </select>
@@ -115,7 +116,7 @@ function FormularioNome({ ocupado, aoEnviar }: { ocupado: boolean; aoEnviar: (no
   return (
     <form className="formulario" onSubmit={enviar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      <label>Nome do novo kit<input required value={nome} onChange={(e) => setNome(e.target.value)} /></label>
+      <label><span className="rotulo">Nome do novo kit<Dica de="Nome do novo kit" /></span><input required value={nome} onChange={(e) => setNome(e.target.value)} /></label>
       <div><button type="submit" className="botao botao-principal" disabled={ocupado}>{ocupado ? "Salvando…" : "Criar kit"}</button></div>
     </form>
   );
@@ -239,9 +240,9 @@ function FormularioPlano({ kit, ocupado, aoEnviar }: {
     <form className="formulario" onSubmit={enviar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <div className="campos-2">
-        <label>Nome do kit<input required value={nome} onChange={(e) => setNome(e.target.value)} /></label>
-        <label>Kits planejados<input required inputMode="numeric" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></label>
-        <label>Preço conservador de venda do kit (R$), opcional
+        <label><span className="rotulo">Nome do kit<Dica de="Nome do kit" /></span><input required value={nome} onChange={(e) => setNome(e.target.value)} /></label>
+        <label><span className="rotulo">Kits planejados<Dica de="Kits planejados" /></span><input required inputMode="numeric" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></label>
+        <label><span className="rotulo">Preço conservador de venda do kit (R$), opcional<Dica de="Preço conservador de venda do kit (R$), opcional" /></span>
           <input inputMode="decimal" value={preco} onChange={(e) => setPreco(e.target.value)} />
         </label>
       </div>
@@ -304,7 +305,7 @@ function FormularioComponente({ produtos, produtoInicial, aoEscolher, ocupado, a
   return (
     <div className="pilha">
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      <label className="formulario">Componente
+      <label className="formulario"><span className="rotulo">Componente<Dica de="Componente" /></span>
         <select value={produtoId} onChange={(e) => {
           const novo = produtos.find((p) => p.id === Number(e.target.value))!;
           setProdutoId(novo.id);
@@ -319,14 +320,14 @@ function FormularioComponente({ produtos, produtoInicial, aoEscolher, ocupado, a
       ) : (
         <form className="formulario" onSubmit={salvar}>
           <div className="campos-2">
-            <label>Cotação de custo do componente
+            <label><span className="rotulo">Cotação de custo do componente<Dica de="Cotação de custo do componente" /></span>
               <select value={cotacaoId ?? ""} onChange={(e) => setCotacaoId(Number(e.target.value))}>
                 {cotacoes.map((c) => (
                   <option key={c.id} value={c.id}>{c.fornecedor} · {c.codigo} · {dataBr(c.data_cotacao)} · {reaisDeCentavos(c.custo_centavos)}</option>
                 ))}
               </select>
             </label>
-            <label>Unidades desse componente por kit
+            <label><span className="rotulo">Unidades desse componente por kit<Dica de="Unidades desse componente por kit" /></span>
               <input required inputMode="numeric" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
             </label>
           </div>
@@ -334,7 +335,7 @@ function FormularioComponente({ produtos, produtoInicial, aoEscolher, ocupado, a
         </form>
       )}
       <form className="formulario grupo" onSubmit={ajustar}>
-        <label>Estoque físico atual do componente
+        <label><span className="rotulo">Estoque físico atual do componente<Dica de="Estoque físico atual do componente" /></span>
           <input required inputMode="numeric" value={estoque} onChange={(e) => setEstoque(e.target.value)} />
         </label>
         <div><button type="submit" className="botao" disabled={ocupado}>Atualizar estoque físico</button></div>

@@ -215,3 +215,21 @@ input, select, textarea { font: inherit; border: 1px solid var(--borda); border-
 .cartao-topo { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
 .cartao-acoes { display: flex; gap: 0.4rem; }
 .cartao .fatos { margin: 0; }
+
+/* "i" de explicação ao lado do nome do campo. O balão aparece ao passar o mouse no "i" e é posicionado
+   pela própria Dica (componentes/Dica.tsx), fora das gavetas, para nunca ficar cortado. */
+.rotulo { display: inline-flex; align-items: center; gap: 0.35rem; }
+.dica {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 15px; height: 15px; border: 1px solid var(--texto-suave); border-radius: 50%;
+  color: var(--texto-suave); font: italic 600 10px/1 Georgia, "Times New Roman", serif; cursor: help;
+}
+.dica::before { content: "i"; }
+.dica:hover { border-color: var(--principal); color: var(--principal); }
+.dica-balao {
+  position: fixed; z-index: 1000; transform: translateY(-100%);
+  width: max-content; max-width: min(260px, calc(100vw - 16px)); padding: 0.45rem 0.6rem; border-radius: var(--raio);
+  background: var(--lateral); color: var(--lateral-texto); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  font: 400 12.5px/1.4 "IBM Plex Sans", "Segoe UI", Arial, sans-serif; white-space: normal; pointer-events: none;
+}
+.dica-balao.abaixo { transform: none; }

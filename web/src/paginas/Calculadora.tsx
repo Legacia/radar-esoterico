@@ -6,6 +6,8 @@ import { Aviso, Indicador, Painel as Caixa } from "../componentes/basicos";
 import { mensagemDeErro, useGravacao } from "../componentes/gravacao";
 import { useNotificar } from "../componentes/Notificacoes";
 import { percentual, reais } from "../formato";
+import { Dica } from "../componentes/Dica";
+import type { ChaveDica } from "../dicas";
 
 type Campos = { comissao: string; tributo: string; margem_alvo: string; tarifa_fixa: string; embalagem: string; outros: string };
 export type Configuracao = { parametros: Record<string, string>; campos: Campos; limite_cotacao_dias: number };
@@ -78,8 +80,8 @@ function Simulacao({ venda, versao, aoSimular }: {
     <Caixa titulo="Simular uma venda">
       <form className="formulario" onSubmit={enviar}>
         <div className="campos-2">
-          <label>Preço de venda (R$)<input required inputMode="decimal" value={preco} onChange={(e) => setPreco(e.target.value)} /></label>
-          <label>Custo do produto (R$)<input required inputMode="decimal" value={custo} onChange={(e) => setCusto(e.target.value)} /></label>
+          <label><span className="rotulo">Preço de venda (R$)<Dica de="Preço de venda (R$)" /></span><input required inputMode="decimal" value={preco} onChange={(e) => setPreco(e.target.value)} /></label>
+          <label><span className="rotulo">Custo do produto (R$)<Dica de="Custo do produto (R$)" /></span><input required inputMode="decimal" value={custo} onChange={(e) => setCusto(e.target.value)} /></label>
         </div>
         <div><button type="submit" className="botao botao-principal">Calcular margem</button></div>
       </form>
@@ -138,12 +140,12 @@ function Parametros({ config, ocupado, aoEnviar }: {
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         <div className="campos-3">
           {CAMPOS.map(([chave, rotulo]) => (
-            <label key={chave}>{rotulo}
+            <label key={chave}><span className="rotulo">{rotulo}<Dica de={rotulo as ChaveDica} /></span>
               <input required inputMode="decimal" value={campos[chave]} onChange={(e) => setCampos({ ...campos, [chave]: e.target.value })} />
             </label>
           ))}
         </div>
-        <label>Cotação antiga após quantos dias?
+        <label><span className="rotulo">Cotação antiga após quantos dias?<Dica de="Cotação antiga após quantos dias?" /></span>
           <input required inputMode="numeric" value={dias} onChange={(e) => setDias(e.target.value)} />
         </label>
         <div><button type="submit" className="botao" disabled={ocupado}>{ocupado ? "Salvando…" : "Salvar parâmetros"}</button></div>

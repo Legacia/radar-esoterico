@@ -11,6 +11,7 @@ import { useNotificar } from "../componentes/Notificacoes";
 import { Tabela, type Coluna } from "../componentes/Tabela";
 import { dataBr, hojeIso, percentual, reais, reaisDeCentavos } from "../formato";
 import { enderecoDe, useRota } from "../rotas";
+import { Dica } from "../componentes/Dica";
 
 type AnuncioResumo = { id: number; marketplace: string; titulo: string; url: string; produto_id: number | null; produto: string | null };
 type Opcao = { id: number; nome: string };
@@ -151,12 +152,12 @@ function Resultados({ produtos, produtoId, filtros, rodada }: {
       <Caixa titulo="O que pesquisar">
         <form className="formulario" onSubmit={buscar}>
           <div className="campos-2">
-            <label>Produto pesquisado
+            <label><span className="rotulo">Produto pesquisado<Dica de="Produto pesquisado" /></span>
               <select value={produtoId} onChange={(e) => ir({ produto: e.target.value, cotacao: "", marketplace: "" })}>
                 {produtos.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
               </select>
             </label>
-            <label>Cotação usada como custo
+            <label><span className="rotulo">Cotação usada como custo<Dica de="Cotação usada como custo" /></span>
               <select value={cotacaoId ?? ""} disabled={!cotacoes?.length} onChange={(e) => ir({ cotacao: e.target.value })}>
                 {!cotacoes?.length && <option value="">Sem cotações</option>}
                 {cotacoes?.map((c) => (
@@ -166,13 +167,13 @@ function Resultados({ produtos, produtoId, filtros, rodada }: {
                 ))}
               </select>
             </label>
-            <label>Filtrar marketplace
+            <label><span className="rotulo">Filtrar marketplace<Dica de="Filtrar marketplace" /></span>
               <select value={marketplace} onChange={(e) => ir({ marketplace: e.target.value })}>
                 <option value="">Todos</option>
                 {marketplaces.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
             </label>
-            <label>Buscar no título dos anúncios
+            <label><span className="rotulo">Buscar no título dos anúncios<Dica de="Buscar no título dos anúncios" /></span>
               <span className="campo-com-botao">
                 <input type="search" value={termo} onChange={(e) => setTermo(e.target.value)} />
                 <button type="submit" className="botao">Buscar</button>
@@ -271,20 +272,20 @@ function FormularioAnuncio({ produtos, produtoInicial, ocupado, aoEnviar }: {
   return (
     <form className="formulario" onSubmit={enviar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      <label>Marketplace<input required {...campo("marketplace")} /></label>
-      <label>Título do anúncio<input required {...campo("titulo")} /></label>
-      <label>URL do anúncio<input required type="url" {...campo("url")} /></label>
+      <label><span className="rotulo">Marketplace<Dica de="Marketplace" /></span><input required {...campo("marketplace")} /></label>
+      <label><span className="rotulo">Título do anúncio<Dica de="Título do anúncio" /></span><input required {...campo("titulo")} /></label>
+      <label><span className="rotulo">URL do anúncio<Dica de="URL do anúncio" /></span><input required type="url" {...campo("url")} /></label>
       <div className="campos-2">
-        <label>Preço observado (R$)<input required inputMode="decimal" {...campo("preco")} /></label>
-        <label>Data da observação<input type="date" required max={hojeIso()} {...campo("data")} /></label>
+        <label><span className="rotulo">Preço observado (R$)<Dica de="Preço observado (R$)" /></span><input required inputMode="decimal" {...campo("preco")} /></label>
+        <label><span className="rotulo">Data da observação<Dica de="Data da observação" /></span><input type="date" required max={hojeIso()} {...campo("data")} /></label>
       </div>
-      <label>Produto do anúncio
+      <label><span className="rotulo">Produto do anúncio<Dica de="Produto do anúncio" /></span>
         <select value={dados.produto_id ?? ""} onChange={(e) => setDados({ ...dados, produto_id: e.target.value ? Number(e.target.value) : null })}>
           <option value="">Vincular depois</option>
           {produtos.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
         </select>
       </label>
-      <label>Sinal observado, opcional<input {...campo("sinal")} placeholder="Ex.: mais vendido na categoria" /></label>
+      <label><span className="rotulo">Sinal observado, opcional<Dica de="Sinal observado, opcional" /></span><input {...campo("sinal")} placeholder="Ex.: mais vendido na categoria" /></label>
       <p className="legenda">Mesmo anúncio com preço novo vira mais um ponto no histórico; os anteriores são preservados.</p>
       <div><button type="submit" className="botao botao-principal" disabled={ocupado}>{ocupado ? "Salvando…" : "Salvar preço observado"}</button></div>
     </form>
@@ -317,7 +318,7 @@ function FormularioVinculo({ anuncios, produtos, ocupado, aoEnviar }: {
   return (
     <form className="formulario" onSubmit={enviar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      <label>Anúncio para vincular
+      <label><span className="rotulo">Anúncio para vincular<Dica de="Anúncio para vincular" /></span>
         <select value={anuncioId} onChange={(e) => {
           const novo = anuncios.find((a) => a.id === Number(e.target.value))!;
           setAnuncioId(novo.id);
@@ -328,7 +329,7 @@ function FormularioVinculo({ anuncios, produtos, ocupado, aoEnviar }: {
           ))}
         </select>
       </label>
-      <label>Vínculo do produto
+      <label><span className="rotulo">Vínculo do produto<Dica de="Vínculo do produto" /></span>
         <select value={produto ?? ""} onChange={(e) => setProduto(e.target.value ? Number(e.target.value) : null)}>
           <option value="">Sem vínculo</option>
           {produtos.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}

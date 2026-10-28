@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { entrar, ErroApi, type Usuario } from "../api";
 import { Aviso } from "../componentes/basicos";
+import { Dica } from "../componentes/Dica";
 
 export function Entrada({ aoEntrar, aviso }: { aoEntrar: (usuario: Usuario) => void; aviso?: string }) {
   const [email, setEmail] = useState("");
@@ -33,13 +34,11 @@ export function Entrada({ aoEntrar, aviso }: { aoEntrar: (usuario: Usuario) => v
         {aviso && <Aviso>{aviso}</Aviso>}
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         <form onSubmit={enviar} className="formulario">
-          <label>
-            E-mail
+          <label><span className="rotulo">E-mail<Dica de="E-mail" /></span>
             <input type="email" autoComplete="username" required value={email}
               onChange={(e) => setEmail(e.target.value)} />
           </label>
-          <label>
-            Senha
+          <label><span className="rotulo">Senha<Dica de="Senha" /></span>
             <input type="password" autoComplete="current-password" required value={senha}
               onChange={(e) => setSenha(e.target.value)} />
           </label>

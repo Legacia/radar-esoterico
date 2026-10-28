@@ -13,6 +13,8 @@ import { Tabela, type Coluna } from "../componentes/Tabela";
 import { TabelaSkus, caminhoExcluirSku, type LinhaSku } from "../componentes/TabelaSkus";
 import { hojeIso } from "../formato";
 import { enderecoDe, useRota } from "../rotas";
+import { Dica } from "../componentes/Dica";
+import type { ChaveDica } from "../dicas";
 
 export type Produto = {
   id: number;
@@ -189,18 +191,18 @@ function FormularioProduto({ produto, ocupado, aoEnviar }: {
     <form className="formulario" onSubmit={enviar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <div className="campos-2">
-        <label>Nome do produto<input required value={dados.nome} onChange={(e) => setDados({ ...dados, nome: e.target.value })} /></label>
-        <label>Família<input value={dados.familia} onChange={(e) => setDados({ ...dados, familia: e.target.value })} /></label>
-        <label>Status do produto<input required value={dados.status} onChange={(e) => setDados({ ...dados, status: e.target.value })} /></label>
+        <label><span className="rotulo">Nome do produto<Dica de="Nome do produto" /></span><input required value={dados.nome} onChange={(e) => setDados({ ...dados, nome: e.target.value })} /></label>
+        <label><span className="rotulo">Família<Dica de="Família" /></span><input value={dados.familia} onChange={(e) => setDados({ ...dados, familia: e.target.value })} /></label>
+        <label><span className="rotulo">Status do produto<Dica de="Status do produto" /></span><input required value={dados.status} onChange={(e) => setDados({ ...dados, status: e.target.value })} /></label>
       </div>
       <fieldset className="grupo">
-        <legend>Avaliação do produto</legend>
+        <legend>Avaliação do produto<Dica de="Avaliação do produto" /></legend>
         {CONFERENCIAS.map(([campo, , rotulo]) => {
           const chave = campo as keyof DadosProduto;
           return (
             <label key={campo} className="tarefa">
               <input type="checkbox" checked={dados[chave] as boolean} onChange={(e) => setDados({ ...dados, [chave]: e.target.checked })} />
-              {rotulo}
+              {rotulo}<Dica de={rotulo as ChaveDica} />
             </label>
           );
         })}
@@ -253,16 +255,16 @@ function FormularioCotacao({ fornecedores, ocupado, aoEnviar }: {
       </p>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <div className="campos-2">
-        <label>Fornecedor da cotação
+        <label><span className="rotulo">Fornecedor da cotação<Dica de="Fornecedor da cotação" /></span>
           <select value={fornecedor} onChange={(e) => setFornecedor(Number(e.target.value))}>
             {fornecedores.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
           </select>
         </label>
-        <label>Código no fornecedor<input required value={codigo} onChange={(e) => setCodigo(e.target.value)} /></label>
-        <label>Custo unitário (R$)<input required inputMode="decimal" value={custo} onChange={(e) => setCusto(e.target.value)} /></label>
-        <label>Quantidade mínima<input required inputMode="numeric" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></label>
-        <label>Data da cotação<input type="date" required max={hojeIso()} value={data} onChange={(e) => setData(e.target.value)} /></label>
-        <label>Preço conservador de venda (R$), opcional<input inputMode="decimal" value={preco} onChange={(e) => setPreco(e.target.value)} /></label>
+        <label><span className="rotulo">Código no fornecedor<Dica de="Código no fornecedor" /></span><input required value={codigo} onChange={(e) => setCodigo(e.target.value)} /></label>
+        <label><span className="rotulo">Custo unitário (R$)<Dica de="Custo unitário (R$)" /></span><input required inputMode="decimal" value={custo} onChange={(e) => setCusto(e.target.value)} /></label>
+        <label><span className="rotulo">Quantidade mínima<Dica de="Quantidade mínima" /></span><input required inputMode="numeric" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></label>
+        <label><span className="rotulo">Data da cotação<Dica de="Data da cotação" /></span><input type="date" required max={hojeIso()} value={data} onChange={(e) => setData(e.target.value)} /></label>
+        <label><span className="rotulo">Preço conservador de venda (R$), opcional<Dica de="Preço conservador de venda (R$), opcional" /></span><input inputMode="decimal" value={preco} onChange={(e) => setPreco(e.target.value)} /></label>
       </div>
       <div><button type="submit" className="botao botao-principal" disabled={ocupado}>{ocupado ? "Salvando…" : "Salvar cotação"}</button></div>
     </form>
