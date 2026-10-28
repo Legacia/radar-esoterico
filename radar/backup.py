@@ -8,6 +8,7 @@ antigas desta pasta, nunca o banco em uso. A pasta backups/ fica fora do Git.
 import argparse
 from datetime import datetime
 from pathlib import Path
+import re
 import sqlite3
 
 import radar.banco as banco
@@ -15,6 +16,8 @@ import radar.banco as banco
 PASTA_PADRAO = Path(__file__).resolve().parents[1] / "backups"
 MANTER_PADRAO = 30
 PREFIXO = "radar-"
+# radar-AAAA-MM-DD_HHMMSS.db, ou radar-AAAA-MM-DD_HHMMSS-N.db quando há mais de uma no mesmo segundo.
+NOME = re.compile(r"^radar-(\d{4}-\d{2}-\d{2}_\d{6})(?:-(\d+))?\.db$")
 
 
 def fazer_backup(origem=None, pasta=None, manter=MANTER_PADRAO, agora=None):
@@ -28,11 +31,12 @@ def fazer_backup(origem=None, pasta=None, manter=MANTER_PADRAO, agora=None):
         raise ValueError(f"Banco não encontrado em {origem}. Nada para copiar.")
     pasta.mkdir(parents=True, exist_ok=True)
     momento = (agora or datetime.now()).strftime("%Y-%m-%d_%H%M%S")
-    destino = pasta / f"{PREFIXO}{momento}.db"
-    numero = 1
-    while destino.exists():
-        numero += 1
-        destino = pasta / f"{PREFIXO}{momento}-{numero}.db"
+    # No mesmo segundo, o número vem depois do maior já usado, mesmo que a cópia anterior tenha
+    # sido apagada pela limpeza: assim a cópia nova nunca parece mais antiga que as outras.
+    usados = [int(m[2] or 1) for a in pasta.glob(f"{PREFIXO}{momento}*.db")
+              if (m := NOME.match(a.name)) and m[1] == momento]
+    numero = max(usados, default=0) + 1
+    destino = pasta / (f"{PREFIXO}{momento}.db" if numero == 1 else f"{PREFIXO}{momento}-{numero}.db")
     temporario = destino.with_suffix(".parcial")
 
     fonte = sqlite3.connect(f"file:{origem.as_posix()}?mode=ro", uri=True, timeout=5)
@@ -59,8 +63,10 @@ def listar_backups(pasta=None):
     pasta = Path(pasta) if pasta is not None else PASTA_PADRAO
     if not pasta.is_dir():
         return []
-    # O nome traz data e hora no formato que ordena certo como texto.
-    return sorted(pasta.glob(f"{PREFIXO}*.db"))
+    # Ordem de criação: data e hora do nome e, no mesmo segundo, o número da sequência
+    # (sem número é a primeira). Só arquivos com o nome exato do backup entram na lista.
+    copias = [(NOME.match(a.name), a) for a in pasta.glob(f"{PREFIXO}*.db")]
+    return [a for m, a in sorted(((m, a) for m, a in copias if m), key=lambda par: (par[0][1], int(par[0][2] or 1)))]
 
 
 def _limpar(pasta, manter):

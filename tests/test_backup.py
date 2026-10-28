@@ -51,13 +51,36 @@ def test_dois_backups_no_mesmo_segundo_nao_se_sobrescrevem(db, tmp_path):
     assert a != b and a.exists() and b.exists()
 
 
+def test_no_mesmo_segundo_a_limpeza_guarda_a_copia_mais_nova(db, tmp_path):
+    agora = datetime(2026, 10, 28, 9, 30, 0)
+    pasta = tmp_path / "b"
+    for numero in range(1, 12):  # inclui -10 e -11, que como texto ficariam antes de -2
+        salvar_fornecedor(f"Fornecedor fictício {numero}", "", "", Decimal(0), "", "", caminho=db)
+        ultima = fazer_backup(db, pasta, manter=1, agora=agora)
+    assert ultima.exists() and ultima.name == "radar-2026-10-28_093000-11.db"
+    assert listar_backups(pasta) == [ultima]
+    assert len(listar_fornecedores(ultima)) == 11
+
+
+def test_ordem_considera_data_antes_da_sequencia(db, tmp_path):
+    pasta = tmp_path / "b"
+    cedo, tarde = datetime(2026, 10, 28, 9, 0, 0), datetime(2026, 10, 28, 10, 0, 0)
+    fazer_backup(db, pasta, agora=cedo)
+    fazer_backup(db, pasta, agora=cedo)
+    fazer_backup(db, pasta, agora=tarde)
+    assert [b.name for b in listar_backups(pasta)] == [
+        "radar-2026-10-28_090000.db", "radar-2026-10-28_090000-2.db", "radar-2026-10-28_100000.db"]
+
+
 def test_outros_arquivos_da_pasta_nao_sao_apagados(db, tmp_path):
     pasta = tmp_path / "backups"
     pasta.mkdir()
     (pasta / "anotacao.txt").write_text("não apagar")
+    (pasta / "radar-copia-manual.db").write_text("não apagar")
     for segundo in range(3):
         fazer_backup(db, pasta, manter=1, agora=datetime(2026, 10, 28, 9, 0, segundo))
-    assert (pasta / "anotacao.txt").exists() and len(listar_backups(pasta)) == 1
+    assert (pasta / "anotacao.txt").exists() and (pasta / "radar-copia-manual.db").exists()
+    assert len(listar_backups(pasta)) == 1
 
 
 def test_banco_inexistente_nao_cria_banco_vazio(tmp_path):
