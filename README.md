@@ -102,8 +102,49 @@ sem editar as já publicadas. Migrações e gravações falhas são revertidas.
 
 Banco, backups, planilhas e segredos ficam fora do Git. `.env.example` está vazio;
 esta versão não precisa de variáveis de ambiente. Não há integração real de marketplace.
-Para backup manual, pare o Radar e copie a pasta `data` inteira para um local protegido
-fora do Git; em WAL, não copie apenas o `.db` enquanto o servidor estiver aberto.
+
+## Backup
+
+**Automático:** cada vez que o servidor inicia (`python -m radar.servidor`), uma cópia do banco vai
+para a pasta `backups/`, com data e hora no nome (ex.: `radar-2026-10-28_093000.db`). Ficam as
+**30 cópias mais recentes**; as mais antigas dessa pasta são apagadas sozinhas. Se o backup falhar,
+o Radar abre mesmo assim e avisa no terminal. Para iniciar sem a cópia: `--sem-backup`.
+
+**Manual, a qualquer momento, com o Radar aberto ou fechado:**
+
+```powershell
+cd E:\Projetos\RadarEsoterico
+.\.venv\Scripts\python.exe -m radar.backup
+```
+
+Para guardar outra quantidade de cópias: `--manter 60`. A cópia usa o recurso de backup do
+próprio SQLite: funciona com as duas pessoas usando o Radar, nunca fica pela metade e é conferida
+(`integrity_check`) antes de ser guardada. Não copie o arquivo `data/radar.db` à mão com o Radar
+aberto: no modo WAL, parte dos dados recentes fica em outro arquivo.
+
+**Backup diário agendado (opcional):** o Agendador de Tarefas do Windows pode rodar o comando todo
+dia. Este comando, rodado uma vez no PowerShell do servidor, cria a tarefa para as 22h:
+
+```powershell
+schtasks /Create /SC DAILY /ST 22:00 /TN "Radar Esoterico - backup" /TR "cmd /c cd /d E:\Projetos\RadarEsoterico && .venv\Scripts\python.exe -m radar.backup"
+```
+
+A tarefa entra na pasta do projeto antes de rodar (o Agendador começa em outra pasta). Ela só roda
+com o computador ligado e a sessão do Windows aberta.
+
+Para remover: `schtasks /Delete /TN "Radar Esoterico - backup"`.
+
+**Cópia fora do computador:** a pasta `backups/` fica no mesmo disco do banco. De tempos em tempos,
+copie a pasta para um pen drive ou HD externo guardado em outro lugar; se o disco do servidor
+estragar, é essa cópia que salva os dados.
+
+**Restaurar um backup:**
+
+1. Desligue o Radar (`Ctrl + C` na janela do servidor).
+2. Na pasta `data`, renomeie `radar.db` para `radar-antes-de-restaurar.db`. Se existirem
+   `radar.db-wal` e `radar.db-shm`, renomeie os dois do mesmo jeito (eles pertencem ao banco antigo).
+3. Copie o backup escolhido de `backups/` para `data/` e renomeie a cópia para `radar.db`.
+4. Inicie o Radar de novo e confira os dados. Só apague `radar-antes-de-restaurar.db` depois.
 
 Código de negócio: `radar/`. API: `radar/api/` (toda rota nova entra no roteador protegido).
 Interface: `web/` (React + TypeScript), que só chama a API e não refaz contas de negócio.
