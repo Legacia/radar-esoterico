@@ -103,6 +103,12 @@ Dinheiro no banco é armazenado em centavos inteiros; percentuais em texto decim
 `PRAGMA user_version` controla o esquema; alterações futuras devem acrescentar migrações,
 sem editar as já publicadas. Migrações e gravações falhas são revertidas.
 
+**Excluir:** na ficha do fornecedor há **Excluir fornecedor**, e nas tabelas de SKUs (fichas de
+fornecedor e de produto) há **Excluir SKU**. Os dois pedem confirmação e não dá para desfazer
+(só restaurando um backup). Só some o que não tem histórico ligado: fornecedor com cotações ou
+contatos não é excluído (use "Descartado ou pausado"), e SKU usado em kit, plano de compra ou
+cenário de margem também não. Excluir um SKU apaga todas as cotações daquele código.
+
 Banco, backups, planilhas e segredos ficam fora do Git. `.env.example` está vazio;
 esta versão não precisa de variáveis de ambiente. Não há integração real de marketplace.
 

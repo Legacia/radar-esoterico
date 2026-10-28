@@ -52,6 +52,39 @@ def listar_skus(fornecedor_id=None, produto_id=None, caminho=None):
         return _skus_atuais(c, fornecedor_id, produto_id)
 
 
+def excluir_sku(sku_id, fornecedor_id, codigo, caminho=None):
+    """Exclui um SKU de fornecedor: todas as cotações do mesmo código (sem diferenciar maiúsculas).
+
+    Só sem histórico ligado (decisão do Legacia em 28/10/2026): se alguma cotação desse código está
+    num kit, no plano de compra ou num cenário de margem, nada é apagado e a mensagem diz onde.
+    O fornecedor e o código confirmados na tela precisam conferir com o registro: com duas pessoas
+    usando o Radar, um identificador pode ser reaproveitado depois de uma exclusão, e uma tela antiga
+    não pode apagar outro SKU. Devolve quantas cotações foram apagadas.
+    """
+    with conectar(caminho) as c:
+        sku = c.execute("SELECT fornecedor_id, codigo FROM sku_fornecedor WHERE id=?", (sku_id,)).fetchone()
+        if sku is None or sku["fornecedor_id"] != fornecedor_id or sku["codigo"].casefold() != str(codigo).casefold():
+            raise ValueError("Cotação não encontrada. Ela pode ter sido alterada ou excluída por outra pessoa; recarregue a tela.")
+        ids = [r[0] for r in c.execute(
+            "SELECT id FROM sku_fornecedor WHERE fornecedor_id=? AND codigo=? COLLATE NOCASE", (sku["fornecedor_id"], sku["codigo"]))]
+        marcas = ",".join("?" * len(ids))
+        usos = [nome for tabela, nome in (("kit_item", "kits"), ("plano_compra", "plano de compra"), ("cenario_margem", "cenários de margem"))
+                if c.execute(f"SELECT 1 FROM {tabela} WHERE sku_fornecedor_id IN ({marcas}) LIMIT 1", ids).fetchone()]
+        if usos:
+            raise ValueError(f"Não é possível excluir o SKU {sku['codigo']}: ele está em uso em {', '.join(usos)}. "
+                             "Troque a cotação usada lá antes de excluir.")
+        c.execute(f"DELETE FROM sku_fornecedor WHERE id IN ({marcas})", ids)
+        _atualizar_ultima_cotacao(c, fornecedor_id)
+        return len(ids)
+
+
+def _atualizar_ultima_cotacao(c, fornecedor_id):
+    # Maior data entre as cotações que restaram; nula quando o fornecedor fica sem cotações.
+    c.execute("""UPDATE fornecedor SET data_ultima_cotacao=
+        (SELECT MAX(data_cotacao) FROM sku_fornecedor WHERE fornecedor_id=?) WHERE id=?""",
+        (fornecedor_id, fornecedor_id))
+
+
 def registrar_cotacao(fornecedor_id, produto_id, codigo, custo, quantidade_minima,
                       data_cotacao, preco_venda=None, caminho=None):
     codigo = obrigatorio(codigo, "o código do SKU")
@@ -82,9 +115,7 @@ def registrar_cotacao(fornecedor_id, produto_id, codigo, custo, quantidade_minim
             custo_unitario_centavos, quantidade_minima, data_cotacao, preco_venda_centavos)
             VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (fornecedor_id, produto_id, codigo, custo_centavos, quantidade_minima, data, preco_centavos))
-        c.execute("""UPDATE fornecedor SET data_ultima_cotacao=
-            (SELECT MAX(data_cotacao) FROM sku_fornecedor WHERE fornecedor_id=?) WHERE id=?""",
-            (fornecedor_id, fornecedor_id))
+        _atualizar_ultima_cotacao(c, fornecedor_id)
         return cursor.lastrowid
 
 

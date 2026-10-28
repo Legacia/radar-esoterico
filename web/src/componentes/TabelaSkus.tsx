@@ -1,6 +1,7 @@
 // Cotações atuais com margem e preço mínimo já calculados pela API (radar/api/fornecedores.py).
 import { dataBr, percentual, reais, reaisDeCentavos } from "../formato";
 import { Aviso, Selo } from "./basicos";
+import { BotaoExcluir } from "./Excluir";
 import { Tabela, type Coluna } from "./Tabela";
 
 export type LinhaSku = {
@@ -20,6 +21,10 @@ export type LinhaSku = {
   preco_minimo: string | null;
   aviso_preco_minimo: string | null;
 };
+
+/** Exclusão de um SKU: fornecedor e código vão junto para a API conferir que é o SKU confirmado na tela. */
+export const caminhoExcluirSku = (sku: LinhaSku) =>
+  `/cotacoes/${sku.id}?${new URLSearchParams({ fornecedor_id: String(sku.fornecedor_id), codigo: sku.codigo })}`;
 
 // Ordenar por texto decimal exige comparar como número exato: inteiro de centésimos de milésimo.
 const ordemDecimal = (texto: string | null) => {
@@ -46,12 +51,22 @@ const COLUNAS: Coluna<LinhaSku>[] = [
     mostrar: (s) => (s.preco_minimo === null ? "Alvo inviável" : reais(s.preco_minimo)) },
 ];
 
-export function TabelaSkus({ skus, limiteDias, semFornecedor }: { skus: LinhaSku[]; limiteDias: number; semFornecedor?: boolean }) {
-  const colunas = semFornecedor ? COLUNAS : [
+export function TabelaSkus({ skus, limiteDias, semFornecedor, excluir }: {
+  skus: LinhaSku[];
+  limiteDias: number;
+  semFornecedor?: boolean;
+  /** Quando informado, cada linha ganha "Excluir SKU" (apaga todas as cotações do código, se não estiver em uso). */
+  excluir?: { ocupado: boolean; aoExcluir: (sku: LinhaSku) => Promise<unknown> };
+}) {
+  const colunas = semFornecedor ? [...COLUNAS] : [
     ...COLUNAS.slice(0, 2),
     { chave: "fornecedor", titulo: "Fornecedor", mostrar: (s: LinhaSku) => s.fornecedor, ordenar: (s: LinhaSku) => s.fornecedor },
     ...COLUNAS.slice(2),
   ];
+  if (excluir) colunas.push({ chave: "excluir", titulo: "Excluir", mostrar: (s: LinhaSku) => (
+    <BotaoExcluir rotulo="Excluir SKU" pergunta={`Excluir o SKU ${s.codigo} e todas as cotações dele?`}
+      ocupado={excluir.ocupado} aoConfirmar={() => excluir.aoExcluir(s)} />
+  ) });
   const aviso = skus.find((s) => s.aviso_preco_minimo)?.aviso_preco_minimo;
   return (
     <div className="pilha">
@@ -60,7 +75,8 @@ export function TabelaSkus({ skus, limiteDias, semFornecedor }: { skus: LinhaSku
         <Aviso tipo="atencao">Há cotações com mais de {limiteDias} dias. Confirme os valores com o fornecedor.</Aviso>
       )}
       {aviso && <Aviso tipo="atencao">{aviso}</Aviso>}
-      <p className="legenda">Exibida a cotação mais recente de cada código por fornecedor. As anteriores são preservadas.</p>
+      <p className="legenda">Exibida a cotação mais recente de cada código por fornecedor. As anteriores são preservadas.
+        {excluir && " Só é possível excluir um SKU que não esteja em kit, plano de compra ou cenário de margem."}</p>
     </div>
   );
 }

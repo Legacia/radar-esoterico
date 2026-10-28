@@ -122,6 +122,8 @@ Regra da margem na promoção (decisões do Legacia em 26/10/2026):
 - Vale a cotação mais recente de cada código. Códigos que só diferem em maiúsculas e minúsculas são o mesmo código.
 - Cotação mais antiga que o limite configurado gera aviso na tela, mas **não** impede a promoção.
 
+Exclusão (decisão do Legacia em 28/10/2026): fornecedor só pode ser excluído de vez se não tiver cotações nem contatos; com histórico, usa-se "Descartado ou pausado". Um SKU (todas as cotações do mesmo código, sem diferenciar maiúsculas) só pode ser excluído se nenhuma cotação dele estiver em kit, plano de compra ou cenário de margem. A tela pede confirmação antes de excluir.
+
 O sistema nunca promove sozinho. O botão fica disponível, mas lista o que falta e não muda o status enquanto o checklist estiver incompleto. A data da promoção é registrada.
 
 ## Cálculo de margem

@@ -50,6 +50,26 @@ def salvar_fornecedor(nome, cnpj, contato, pedido_minimo, prazo, pagamento,
         return fornecedor_id
 
 
+def excluir_fornecedor(fornecedor_id, nome, caminho=None):
+    """Exclui de vez só fornecedor sem histórico (decisão do Legacia em 28/10/2026).
+
+    Com cotações ou contatos registrados, explica o que impede; para tirá-lo da lista de trabalho
+    existe a etapa "Descartado ou pausado", que preserva o histórico. O nome confirmado na tela
+    precisa conferir: um identificador pode ser reaproveitado depois de uma exclusão, e uma ficha
+    antiga, aberta em outro computador, não pode apagar outro fornecedor.
+    """
+    with conectar(caminho) as c:
+        if _obter(c, fornecedor_id)["nome"] != nome:
+            raise ValueError("Este fornecedor foi alterado por outra pessoa. Recarregue a ficha antes de excluir.")
+        cotacoes = c.execute("SELECT COUNT(*) FROM sku_fornecedor WHERE fornecedor_id=?", (fornecedor_id,)).fetchone()[0]
+        contatos = c.execute("SELECT COUNT(*) FROM interacao WHERE fornecedor_id=?", (fornecedor_id,)).fetchone()[0]
+        motivos = [texto for n, texto in ((cotacoes, f"{cotacoes} cotação(ões)"), (contatos, f"{contatos} contato(s)")) if n]
+        if motivos:
+            raise ValueError(f"Não é possível excluir: o fornecedor tem {' e '.join(motivos)} registrados. "
+                             "Exclua as cotações sem uso ou mova o fornecedor para \"Descartado ou pausado\".")
+        c.execute("DELETE FROM fornecedor WHERE id=?", (fornecedor_id,))
+
+
 def alterar_etapa(fornecedor_id, etapa, motivo="", caminho=None):
     validar_etapa(etapa, motivo)
     if etapa == "Fornecedor oficial":

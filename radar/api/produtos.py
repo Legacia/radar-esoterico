@@ -9,7 +9,7 @@ from radar.api.fornecedores import data_do_texto, linha_sku
 from radar.banco import conectar
 from radar.fornecedores import listar_fornecedores
 from radar.margem.configuracao import obter_configuracao
-from radar.produtos import listar_produtos, listar_skus, registrar_cotacao, salvar_produto
+from radar.produtos import excluir_sku, listar_produtos, listar_skus, registrar_cotacao, salvar_produto
 from radar.valores import dinheiro_texto
 
 CAMPOS = ("id", "nome", "familia", "status", "especificacoes_conferidas", "procedencia_conferida",
@@ -82,3 +82,9 @@ def cotar(produto_id: int, dados: Cotacao):
     return {"id": registrar_cotacao(dados.fornecedor_id, produto_id, dados.codigo, dinheiro_texto(dados.custo),
                                     dados.quantidade_minima, data_do_texto(dados.data),
                                     dinheiro_texto(preco) if preco else None)}
+
+
+@protegido.delete("/cotacoes/{sku_id}")
+def excluir_cotacao(sku_id: int, fornecedor_id: int, codigo: str):
+    # Fornecedor e código confirmados vão junto, para uma tela antiga não apagar outro SKU com o mesmo id.
+    return {"apagadas": excluir_sku(sku_id, fornecedor_id, codigo)}

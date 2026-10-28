@@ -4,12 +4,13 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { pedir } from "../api";
 import { Abas } from "../componentes/Abas";
 import { Aviso, Painel as Caixa, Selo, type Tom } from "../componentes/basicos";
+import { BotaoExcluir } from "../componentes/Excluir";
 import { useFicha } from "../componentes/ficha";
 import { Gaveta } from "../componentes/Gaveta";
 import { mensagemDeErro, useGravacao, type Executar } from "../componentes/gravacao";
 import { useNotificar } from "../componentes/Notificacoes";
 import { Tabela, type Coluna } from "../componentes/Tabela";
-import { TabelaSkus, type LinhaSku } from "../componentes/TabelaSkus";
+import { TabelaSkus, caminhoExcluirSku, type LinhaSku } from "../componentes/TabelaSkus";
 import { dataBr, hojeIso, percentual, reaisDeCentavos, textoDeCentavos } from "../formato";
 import { enderecoDe, useRota } from "../rotas";
 
@@ -131,6 +132,7 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
 }) {
   const { ficha, erro, versao, bloqueado, gravar, recarregarTudo } = useFicha<Ficha>({
     caminho: `/fornecedores/${id}`, id, executar, ocupado, gravacoes, aoMudar });
+  const notificar = useNotificar();
   // Pendências da última tentativa de promoção: ficam aqui fora para sobreviver à recarga da ficha.
   const [faltam, setFaltam] = useState<string[] | null>(null);
 
@@ -149,7 +151,8 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
             ) },
             { titulo: `SKUs cotados (${ficha.skus.length})`, conteudo: (
               <>
-                <TabelaSkus skus={ficha.skus} limiteDias={ficha.limite_cotacao_dias} semFornecedor />
+                <TabelaSkus skus={ficha.skus} limiteDias={ficha.limite_cotacao_dias} semFornecedor excluir={{ ocupado: bloqueado,
+                  aoExcluir: (sku) => gravar(() => pedir(caminhoExcluirSku(sku), { metodo: "DELETE" }), `SKU ${sku.codigo} excluído.`) }} />
                 <a href={enderecoDe("produtos")}>Lançar ou renovar cotações em Produtos e SKUs</a>
               </>
             ) },
@@ -158,6 +161,14 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
                 aoEnviar={(dados) => gravar(() => pedir(`/fornecedores/${id}/contatos`, { corpo: dados }), "Contato registrado.")} />
             ) },
           ]} />
+          <BotaoExcluir rotulo="Excluir fornecedor" pergunta={`Excluir ${ficha.nome}?`} ocupado={bloqueado}
+            aoConfirmar={() => executar(async () => {
+              await pedir(`/fornecedores/${id}?${new URLSearchParams({ nome: ficha.nome })}`, { metodo: "DELETE" });
+              notificar(`${ficha.nome} excluído.`);
+              aoFechar();
+              await aoMudar();
+            })} />
+          <p className="legenda">Só é possível excluir um fornecedor sem cotações nem contatos. Com histórico, use a etapa "Descartado ou pausado".</p>
         </div>
       )}
     </Gaveta>

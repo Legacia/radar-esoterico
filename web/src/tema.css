@@ -70,6 +70,7 @@ a { color: var(--link); }
   color: var(--texto); padding: 0.45rem 0.9rem; cursor: pointer; }
 .botao:disabled { opacity: 0.6; cursor: default; }
 .botao-principal { background: var(--principal); border-color: var(--principal); color: #fff; font-weight: 500; }
+.botao-perigo { color: var(--vermelho); border-color: #f4c3bd; }
 .botao-lateral { background: transparent; color: var(--lateral-texto); border-color: var(--lateral-2); width: 100%; }
 .botao-discreto { font: inherit; background: none; border: none; color: inherit; cursor: pointer; padding: 0.2rem 0.4rem; }
 .formulario { display: flex; flex-direction: column; gap: 0.9rem; margin-top: 1rem; }
