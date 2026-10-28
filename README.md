@@ -33,8 +33,9 @@ cd E:\Projetos\RadarEsoterico
 ```
 
 Informe nome, e-mail e uma senha de pelo menos 8 caracteres. A senha é solicitada duas vezes,
-sem aparecer na tela. Não passe senhas como argumentos. As contas reais são criadas pelo
-responsável no servidor; não há cadastro aberto nem envio de e-mails.
+sem aparecer na tela. Não passe senhas como argumentos. O comando só é necessário para a
+**primeira** conta: depois, quem já entrou cria as outras na tela **Contas** (Visão geral). Não há
+cadastro aberto (quem não tem conta não consegue se cadastrar sozinho) nem envio de e-mails.
 
 Abra http://localhost:8501 no navegador, entre com a conta criada e veja o Painel. Para desligar o
 servidor, aperte `Ctrl + C` na janela do PowerShell. Para aceitar só este computador, use
@@ -45,14 +46,16 @@ prorrogação pelo uso. A sessão fica guardada no servidor; o navegador recebe 
 cookie `HttpOnly` e `SameSite=Strict`. Reiniciar o servidor exige novo login. Cada navegador entra
 separadamente.
 
-Para redefinir uma senha, no servidor:
+Para trocar uma senha, use **Contas → Trocar senha**. As sessões abertas com a senha antiga
+(em outros navegadores) são encerradas na hora; quem trocou a própria senha continua conectado.
+Se ninguém conseguir entrar, redefina no servidor:
 
 ```powershell
 .\.venv\Scripts\python.exe -m radar.usuarios redefinir
 ```
 
-A senha anterior deixa de funcionar para novos logins. Sessões já abertas continuam até sair
-ou completar as 8 horas. Para encerrá-las imediatamente, reinicie o servidor.
+Pelo comando, a senha anterior deixa de funcionar para novos logins, mas sessões já abertas
+continuam até sair ou completar as 8 horas. Para encerrá-las imediatamente, reinicie o servidor.
 
 ## Usar em outro computador da casa
 

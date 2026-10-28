@@ -8,6 +8,7 @@ export type Secao = { titulo: string; paginas: Pagina[] };
 export const SECOES: Secao[] = [
   { titulo: "Visão geral", paginas: [
     { chave: "painel", titulo: "Painel", descricao: "Indicadores, plano de 30 dias e pendências." },
+    { chave: "contas", titulo: "Contas", descricao: "Quem pode entrar no Radar e troca de senha." },
   ] },
   { titulo: "Fornecimento", paginas: [
     { chave: "fornecedores", titulo: "Fornecedores", descricao: "Ciclo, ficha, cotações e checklist de promoção." },

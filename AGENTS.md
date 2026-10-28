@@ -38,7 +38,8 @@ Dentro:
 Fora (não implementar sem pedido explícito):
 
 - Nuvem, aplicativo mobile, múltiplos usuários com perfis, integração com IA em tempo real
-- Perfis e permissões diferentes por usuário, cadastro aberto de novos usuários, recuperação de senha por e-mail e login social (Google etc.). O login simples com e-mail e senha está **dentro** do escopo.
+- Perfis e permissões diferentes por usuário, cadastro aberto de novos usuários, recuperação de senha por e-mail e login social (Google etc.). O login simples com e-mail e senha está **dentro** do escopo, assim como a tela Contas, em que quem já entrou cria contas e troca senhas.
+- Login com Google: pedido pelo Legacia em 28/10/2026 e adiado por decisão dele, porque o Google só aceita `localhost` como endereço de retorno em HTTP (não funcionaria para quem abre pelo IP da rede) e exige projeto no Google Cloud e internet.
 - Coleta automática agressiva de marketplaces
 
 ## Stack
@@ -206,9 +207,9 @@ Decisão do Legacia: entra na primeira versão. Uso previsto: duas pessoas (Lega
 - SQLite com modo **WAL** ligado e `busy_timeout` configurado, para duas pessoas usarem ao mesmo tempo sem erro de "banco travado". Gravações devem ser curtas.
 - O banco **nunca** é copiado para os outros computadores: existe um só, no servidor.
 - **Login simples (decisão do Legacia):** e-mail e senha, pedidos antes de qualquer tela. O e-mail serve só como identificador de quem entra; o sistema **não envia e-mails**.
-  - Contas são criadas pelo Legacia, por um comando de linha no servidor (por exemplo `python -m radar.usuarios criar`). Não existe tela de cadastro aberto.
+  - A primeira conta é criada por um comando de linha no servidor (`python -m radar.usuarios criar`). Depois, quem já entrou cria outras contas e troca senhas na tela **Contas** (decisão do Legacia em 28/10/2026). Não existe cadastro aberto: as rotas `/api/contas` exigem sessão. Trocar a senha encerra as sessões abertas daquela conta, menos a de quem trocou.
   - A senha é guardada **somente como hash** (bcrypt ou argon2), na tabela `usuario`. Nunca em texto, nunca no código, nunca no Git.
-  - Senha esquecida: o Legacia redefine pelo mesmo comando no servidor. Sem recuperação por e-mail.
+  - Senha esquecida: outra pessoa com conta troca pela tela Contas, ou o Legacia redefine pelo comando no servidor. Sem recuperação por e-mail.
   - Sem bloqueio por tentativas de senha erradas (decisão do Legacia em 27/10/2026).
   - A sessão dura no máximo **8 horas** desde a entrada, sem prorrogação por atividade (aprovado pelo Legacia em 26/10/2026). O valor fica em `radar/sessoes.py`.
   - "Simples" significa sem perfis e sem permissões diferentes: quem tem conta vê tudo. Mas o login é de verdade: sessão por usuário em **cookie `HttpOnly` e `SameSite=Strict`**, com o identificador da sessão aleatório e guardado no servidor. **Toda rota da API**, exceto entrar, verifica a sessão antes de devolver qualquer dado; a interface só esconde telas, quem protege os dados é a API. Sair e expirar invalidam a sessão no servidor.
