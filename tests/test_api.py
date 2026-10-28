@@ -27,6 +27,8 @@ def rotas_da_api(app):
     import radar.api as api
     from starlette.routing import Mount
     assert len([r for r in app.routes if not isinstance(r, Mount)]) == 2
+    # A única montagem permitida é a interface, na raiz; uma subaplicação em /api escaparia da lista.
+    assert all(r.path == "" for r in app.routes if isinstance(r, Mount))
     return [(m, r.path) for roteador in (api.publico, api.protegido)
             for r in roteador.routes if isinstance(r, APIRoute) for m in r.methods]
 
