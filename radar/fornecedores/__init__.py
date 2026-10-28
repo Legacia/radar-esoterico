@@ -63,7 +63,9 @@ def excluir_fornecedor(fornecedor_id, nome, caminho=None):
             raise ValueError("Este fornecedor foi alterado por outra pessoa. Recarregue a ficha antes de excluir.")
         cotacoes = c.execute("SELECT COUNT(*) FROM sku_fornecedor WHERE fornecedor_id=?", (fornecedor_id,)).fetchone()[0]
         contatos = c.execute("SELECT COUNT(*) FROM interacao WHERE fornecedor_id=?", (fornecedor_id,)).fetchone()[0]
-        motivos = [texto for n, texto in ((cotacoes, f"{cotacoes} cotação(ões)"), (contatos, f"{contatos} contato(s)")) if n]
+        apoio = c.execute("SELECT COUNT(*) FROM item_apoio WHERE fornecedor_id=?", (fornecedor_id,)).fetchone()[0]
+        motivos = [texto for n, texto in ((cotacoes, f"{cotacoes} cotação(ões)"), (contatos, f"{contatos} contato(s)"),
+                                          (apoio, f"{apoio} item(ns) de apoio")) if n]
         if motivos:
             raise ValueError(f"Não é possível excluir: o fornecedor tem {' e '.join(motivos)} registrados. "
                              "Exclua as cotações sem uso ou mova o fornecedor para \"Descartado ou pausado\".")

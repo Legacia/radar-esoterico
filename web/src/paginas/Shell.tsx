@@ -8,13 +8,14 @@ import { Calculadora } from "./Calculadora";
 import { Compras } from "./Compras";
 import { Contas } from "./Contas";
 import { Importar } from "./Importar";
+import { ItensApoio } from "./ItensApoio";
 import { Kits } from "./Kits";
 import { Painel } from "./Painel";
 import { Pesquisa } from "./Pesquisa";
 import { Produtos } from "./Produtos";
 
-// Uma tela para cada página de rotas.ts (o teste de rotas confere as nove).
-export const TELAS: Record<string, () => JSX.Element> = { painel: Painel, fornecedores: Fornecedores, produtos: Produtos, calculadora: Calculadora, pesquisa: Pesquisa, importar: Importar, kits: Kits, compras: Compras, contas: Contas };
+// Uma tela para cada página de rotas.ts (o teste de rotas confere as dez).
+export const TELAS: Record<string, () => JSX.Element> = { painel: Painel, fornecedores: Fornecedores, produtos: Produtos, calculadora: Calculadora, pesquisa: Pesquisa, importar: Importar, kits: Kits, compras: Compras, contas: Contas, apoio: ItensApoio };
 
 export function Shell({ usuario, aoSair }: { usuario: Usuario; aoSair: () => Promise<void> }) {
   const rota = useRota();

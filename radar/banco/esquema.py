@@ -133,3 +133,29 @@ MIGRACOES += ((
     )""",
     "CREATE INDEX idx_preco_anuncio_data ON preco_observado(anuncio_id,data)",
 ),)
+
+# Itens de apoio (embalagens, caixas, sacolas): cada produto e cada kit indica os seus.
+MIGRACOES += ((
+    """CREATE TABLE item_apoio (
+        id INTEGER PRIMARY KEY,
+        nome TEXT NOT NULL CHECK(length(trim(nome)) > 0),
+        fornecedor_id INTEGER REFERENCES fornecedor(id),
+        custo_centavos INTEGER NOT NULL CHECK(typeof(custo_centavos)='integer' AND custo_centavos >= 0),
+        data_cotacao TEXT NOT NULL
+    )""",
+    """CREATE TABLE produto_apoio (
+        produto_id INTEGER NOT NULL REFERENCES produto(id),
+        item_apoio_id INTEGER NOT NULL REFERENCES item_apoio(id),
+        quantidade INTEGER NOT NULL CHECK(typeof(quantidade)='integer' AND quantidade BETWEEN 1 AND 1000),
+        PRIMARY KEY(produto_id, item_apoio_id)
+    )""",
+    """CREATE TABLE kit_apoio (
+        kit_id INTEGER NOT NULL REFERENCES kit(id),
+        item_apoio_id INTEGER NOT NULL REFERENCES item_apoio(id),
+        quantidade INTEGER NOT NULL CHECK(typeof(quantidade)='integer' AND quantidade BETWEEN 1 AND 1000),
+        PRIMARY KEY(kit_id, item_apoio_id)
+    )""",
+    """ALTER TABLE kit ADD COLUMN preco_venda_centavos INTEGER
+        CHECK(preco_venda_centavos IS NULL OR
+            (typeof(preco_venda_centavos)='integer' AND preco_venda_centavos > 0))""",
+),)

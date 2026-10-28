@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { pedir } from "../api";
 import { Aviso, Indicador, Painel as Caixa, Selo } from "../componentes/basicos";
+import { EmbalagemApoio, type Apoio } from "../componentes/EmbalagemApoio";
 import { useFicha } from "../componentes/ficha";
 import { Gaveta } from "../componentes/Gaveta";
 import { mensagemDeErro, useGravacao, type Executar } from "../componentes/gravacao";
 import { useNotificar } from "../componentes/Notificacoes";
 import { Tabela, type Coluna } from "../componentes/Tabela";
-import { dataBr, reais, reaisDeCentavos } from "../formato";
+import { dataBr, percentual, reais, reaisDeCentavos, textoDeCentavos } from "../formato";
 import { enderecoDe, useRota } from "../rotas";
 
 type KitResumo = { id: number; nome: string; quantidade_planejada: number };
@@ -19,7 +20,14 @@ type Componente = {
   produto_id: number; produto: string; quantidade: number; estoque_atual: number;
   custo_unitario_centavos: number | null; codigo: string | null; data_cotacao: string | null; sku_fornecedor_id: number | null;
 };
-export type FichaKit = KitResumo & { componentes: Componente[]; custo_unitario: string | null; custo_lote: string | null };
+type MargemKit = {
+  embalagem: string; embalagem_propria: boolean; contribuicao: string | null; margem_pct: string | null;
+  preco_minimo: string | null; aviso_preco_minimo: string | null;
+};
+export type FichaKit = KitResumo & {
+  componentes: Componente[]; custo_unitario: string | null; custo_lote: string | null;
+  preco_venda_centavos: number | null; apoio: Apoio; margem: MargemKit;
+};
 type Cotacao = { id: number; fornecedor: string; codigo: string; data_cotacao: string; custo_centavos: number };
 
 // Quantidades são inteiros de unidades, não dinheiro; o servidor confere de novo.
@@ -162,6 +170,14 @@ function DetalheKit({ id, produtos, versaoBase, executar, ocupado, gravacoes, ao
             vazio="Kit ainda sem componentes." />
         </div>
       </Caixa>
+      <Caixa titulo="Margem do kit">
+        <MargemDoKit kit={kit} />
+      </Caixa>
+      <Caixa titulo="Embalagem do kit">
+        <p className="legenda">O kit usa só a própria embalagem: os itens de apoio dos componentes não entram aqui.</p>
+        <EmbalagemApoio apoio={kit.apoio} padrao={kit.margem.embalagem} caminho={`/kits/${id}/apoio`}
+          quem="do kit" ocupado={bloqueado} gravar={gravar} />
+      </Caixa>
       <div className="pilha">
         <Caixa titulo="Plano do kit">
           <FormularioPlano key={versao} kit={kit} ocupado={bloqueado}
@@ -178,13 +194,37 @@ function DetalheKit({ id, produtos, versaoBase, executar, ocupado, gravacoes, ao
   );
 }
 
+function MargemDoKit({ kit }: { kit: FichaKit }) {
+  const m = kit.margem;
+  if (!kit.custo_unitario) return <Aviso>Complete o custo dos componentes para calcular a margem.</Aviso>;
+  return (
+    <div className="pilha">
+      <div className="grade-2 grade-igual">
+        {m.contribuicao && m.margem_pct ? (
+          <Indicador rotulo="Contribuição por kit" valor={reais(m.contribuicao)} detalhe={`Margem de ${percentual(m.margem_pct)}`}
+            tom={m.contribuicao.startsWith("-") ? "vermelho" : undefined} />
+        ) : (
+          <Indicador rotulo="Contribuição por kit" valor="—" detalhe="Informe o preço conservador no plano do kit" />
+        )}
+        <Indicador rotulo="Preço mínimo para a margem-alvo" valor={m.preco_minimo ? reais(m.preco_minimo) : "—"} />
+      </div>
+      {m.aviso_preco_minimo && <Aviso tipo="atencao">{m.aviso_preco_minimo}</Aviso>}
+      <p className="legenda">
+        Custo dos componentes {reais(kit.custo_unitario)} e embalagem {reais(m.embalagem)}
+        {m.embalagem_propria ? " (itens de apoio do kit)" : " (padrão da configuração)"}. Frete e despesas fixas não entram.
+      </p>
+    </div>
+  );
+}
+
 function FormularioPlano({ kit, ocupado, aoEnviar }: {
   kit: FichaKit;
   ocupado: boolean;
-  aoEnviar: (dados: { nome: string; quantidade_planejada: number }) => Promise<unknown>;
+  aoEnviar: (dados: { nome: string; quantidade_planejada: number; preco_venda: string }) => Promise<unknown>;
 }) {
   const [nome, setNome] = useState(kit.nome);
   const [quantidade, setQuantidade] = useState(String(kit.quantidade_planejada));
+  const [preco, setPreco] = useState(kit.preco_venda_centavos ? textoDeCentavos(kit.preco_venda_centavos) : "");
   const [erro, setErro] = useState<string | null>(null);
 
   async function enviar(evento: FormEvent) {
@@ -192,7 +232,7 @@ function FormularioPlano({ kit, ocupado, aoEnviar }: {
     setErro(null);
     const numero = inteiro(quantidade, 0);
     if (numero === null) return setErro("A quantidade planejada deve ser um inteiro não negativo.");
-    try { await aoEnviar({ nome, quantidade_planejada: numero }); } catch (e) { setErro(mensagemDeErro(e)); }
+    try { await aoEnviar({ nome, quantidade_planejada: numero, preco_venda: preco.trim() }); } catch (e) { setErro(mensagemDeErro(e)); }
   }
 
   return (
@@ -201,6 +241,9 @@ function FormularioPlano({ kit, ocupado, aoEnviar }: {
       <div className="campos-2">
         <label>Nome do kit<input required value={nome} onChange={(e) => setNome(e.target.value)} /></label>
         <label>Kits planejados<input required inputMode="numeric" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></label>
+        <label>Preço conservador de venda do kit (R$), opcional
+          <input inputMode="decimal" value={preco} onChange={(e) => setPreco(e.target.value)} />
+        </label>
       </div>
       <p className="legenda">Zero retira o kit da necessidade conjunta.</p>
       <div><button type="submit" className="botao botao-principal" disabled={ocupado}>{ocupado ? "Salvando…" : "Salvar plano do kit"}</button></div>

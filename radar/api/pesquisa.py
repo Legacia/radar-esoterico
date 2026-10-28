@@ -3,6 +3,8 @@
 Simulação livre (decisão do Legacia em 27/10/2026): usa a margem-alvo configurada, mesmo abaixo de 20%.
 Margens, mediana e preço mínimo vêm de `radar.mercado.pesquisar`; a tela só mostra.
 """
+from decimal import Decimal
+
 from pydantic import BaseModel, StrictInt
 
 from radar.api import protegido, texto
@@ -74,6 +76,7 @@ def resultado(produto_id: int, cotacao_id: int, marketplace: str = "", termo: st
         "margem_alvo_pct": texto(config.parametros.margem_alvo_pct),
         "custo_centavos": int(r["custo"] * 100),
         "data_cotacao": r["data_cotacao"],
+        "embalagem": texto(r["embalagem"].quantize(Decimal("0.01"))),
         "cotacao_antiga": cotacao_antiga(r["data_cotacao"], config.limite_cotacao_dias),
         "marketplaces": marketplaces,
     }

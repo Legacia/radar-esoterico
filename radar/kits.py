@@ -1,8 +1,11 @@
 """Composição, custo por cotação e necessidade de estoque por componente."""
 from decimal import Decimal
 
+from radar.apoio import embalagem_kit
 from radar.banco import conectar
-from radar.valores import obrigatorio
+from radar.margem import calcular, com_embalagem, preco_minimo
+from radar.margem.configuracao import _ler
+from radar.valores import centavos, obrigatorio
 
 
 def listar_kits(caminho=None):
@@ -44,6 +47,44 @@ def ajustar_estoque(produto_id, quantidade, caminho=None):
     with conectar(caminho) as c:
         if not c.execute("UPDATE produto SET estoque_atual=? WHERE id=?", (quantidade,produto_id)).rowcount:
             raise ValueError("Produto não encontrado.")
+
+
+def definir_preco(kit_id, preco_venda, caminho=None):
+    """Preço conservador do kit (opcional), para estimar a margem com a embalagem do próprio kit."""
+    preco_centavos = None if preco_venda is None else centavos(preco_venda)
+    if preco_centavos == 0:
+        raise ValueError("O preço conservador deve ser maior que zero, ou ficar em branco.")
+    with conectar(caminho) as c:
+        if not c.execute("UPDATE kit SET preco_venda_centavos=? WHERE id=?", (preco_centavos, kit_id)).rowcount:
+            raise ValueError("Kit não encontrado.")
+
+
+def margem_kit(custo_componentes, preco_venda_centavos, embalagem_centavos, parametros):
+    """Função pura. O kit usa só a própria embalagem (itens de apoio do kit ou a padrão),
+    nunca a dos componentes. Sem custo completo, não há margem nem preço mínimo."""
+    p = com_embalagem(parametros, embalagem_centavos)
+    resultado = {"embalagem": p.embalagem.quantize(Decimal("0.01")), "embalagem_propria": embalagem_centavos is not None,
+                 "contribuicao": None, "margem_pct": None, "preco_minimo": None, "aviso_preco_minimo": None}
+    if custo_componentes is None:
+        return resultado
+    if preco_venda_centavos is not None:
+        margem = calcular(Decimal(preco_venda_centavos) / 100, custo_componentes, p)
+        resultado.update(contribuicao=margem.contribuicao, margem_pct=margem.margem_pct)
+    try:
+        resultado["preco_minimo"] = preco_minimo(custo_componentes, p)
+    except ValueError as erro:
+        resultado["aviso_preco_minimo"] = str(erro)
+    return resultado
+
+
+def avaliar_margem_kit(kit_id, caminho=None):
+    with conectar(caminho) as c:
+        kit = c.execute("SELECT preco_venda_centavos FROM kit WHERE id=?", (kit_id,)).fetchone()
+        if kit is None:
+            raise ValueError("Kit não encontrado.")
+        embalagem, parametros = embalagem_kit(c, kit_id), _ler(c).parametros
+    custo = consultar_kit(kit_id, 1, caminho)["custo_unitario"]
+    return margem_kit(custo, kit["preco_venda_centavos"], embalagem, parametros)
 
 
 def planejar_kits(kit_id, quantidade, caminho=None):

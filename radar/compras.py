@@ -2,7 +2,8 @@
 from decimal import Decimal
 
 from radar.banco import conectar
-from radar.margem import calcular
+from radar.apoio import SQL_EMBALAGEM_PRODUTO
+from radar.margem import calcular, com_embalagem
 from radar.margem.configuracao import _ler
 from radar.valores import centavos
 
@@ -27,7 +28,8 @@ def salvar_orcamento(total, reserva, caminho=None):
 def criterios_compra(item, parametros, total_comprometido, orcamento, reserva):
     """Função pura. Entradas monetárias em centavos inteiros; margem em Decimal."""
     custo = Decimal(item["custo_unitario_centavos"]) / 100
-    resultado = calcular(Decimal(item["preco_venda_centavos"]) / 100, custo, parametros)
+    resultado = calcular(Decimal(item["preco_venda_centavos"]) / 100, custo,
+                         com_embalagem(parametros, item.get("embalagem_centavos")))
     valor = item["quantidade"] * item["custo_unitario_centavos"]
     acima_vinte = not item["validado"] and valor * 100 > orcamento * 20
     criterios = {
@@ -51,7 +53,8 @@ def _itens(c):
         p.especificacoes_conferidas,p.procedencia_conferida,p.qualidade_conferida,
         s.codigo,s.custo_unitario_centavos,s.quantidade_minima,s.data_cotacao,s.fornecedor_id,
         f.nome AS fornecedor,f.status AS status_fornecedor,f.cnpj,f.cnpj_verificado,
-        f.condicoes_verificadas,f.emite_nota,f.prazo,f.condicao_pagamento
+        f.condicoes_verificadas,f.emite_nota,f.prazo,f.condicao_pagamento,
+        """ + SQL_EMBALAGEM_PRODUTO.format("pc.produto_id") + """ AS embalagem_centavos
         FROM plano_compra pc JOIN produto p ON p.id=pc.produto_id
         JOIN sku_fornecedor s ON s.id=pc.sku_fornecedor_id
         JOIN fornecedor f ON f.id=s.fornecedor_id ORDER BY p.nome,p.id""")]

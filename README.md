@@ -108,6 +108,19 @@ fornecedor e de produto) há **Excluir SKU**. Os dois pedem confirmação e não
 (só restaurando um backup). Só some o que não tem histórico ligado: fornecedor com cotações ou
 contatos não é excluído (use "Descartado ou pausado"), e SKU usado em kit, plano de compra ou
 cenário de margem também não. Excluir um SKU apaga todas as cotações daquele código.
+Fornecedor com item de apoio cadastrado também não é excluído.
+
+### Itens de apoio e embalagem
+
+Na tela **Itens de apoio** (Fornecimento) ficam caixas, sacolas, papel de seda e outros
+materiais de envio, cada um com custo unitário, data da cotação e, se quiser, fornecedor. Na ficha
+de cada produto (aba **Embalagem e apoio**) e na tela de cada kit (**Embalagem do kit**), indique
+quais itens vão em cada unidade vendida e em que quantidade. A soma substitui a embalagem padrão
+da configuração (R$ 2,50) em todas as contas de margem daquele produto: fichas de fornecedor e
+de produto, promoção do fornecedor, pendências do Painel, Pesquisa e Decisão de compra. Produto
+sem itens indicados continua com a embalagem padrão. O kit usa só os próprios itens, nunca os dos
+componentes, porque pode precisar de uma embalagem maior. Mudar o custo de um item muda a margem
+de todos os produtos e kits que o usam. Item indicado em algum produto ou kit não é excluído.
 
 Banco, backups, planilhas e segredos ficam fora do Git. `.env.example` está vazio;
 esta versão não precisa de variáveis de ambiente. Não há integração real de marketplace.
@@ -243,7 +256,8 @@ silenciosamente. Altere a escolha quando quiser atualizar o cenário.
 Cadastre o kit, seus produtos, quantidades e a cotação de custo de cada componente.
 Informe o estoque físico por produto e quantos kits deseja planejar (zero tira um kit do plano).
 A tela calcula custo e faltas por componente, somando também os componentes compartilhados
-entre todos os kits planejados. Composição sem cotação não recebe custo inventado.
+entre todos os kits planejados. Com um preço conservador de venda no plano do kit, a tela mostra
+a contribuição e a margem por kit; o preço mínimo para a margem-alvo aparece mesmo sem preço. Composição sem cotação não recebe custo inventado.
 As quantidades são planejamento: não reservam nem baixam estoque e não entram automaticamente
 no orçamento. Registre as compras de componentes na Decisão de compra.
 

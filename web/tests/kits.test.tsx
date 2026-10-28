@@ -11,6 +11,11 @@ const BASE = {
 };
 const KIT: FichaKit = {
   id: 1, nome: "Kit fictício 3 incensos", quantidade_planejada: 10, custo_unitario: "19.5", custo_lote: "195",
+  preco_venda_centavos: 5990,
+  apoio: { itens: [{ id: 4, nome: "Caixa fictícia M", fornecedor: null, custo_centavos: 180, data_cotacao: "2026-10-20", quantidade: 2, subtotal_centavos: 360 }],
+           embalagem_centavos: 360 },
+  margem: { embalagem: "3.60", embalagem_propria: true, contribuicao: "13.23", margem_pct: "0.2208681135",
+            preco_minimo: "57.60", aviso_preco_minimo: null },
   componentes: [
     { produto_id: 5, produto: "Incenso fictício", quantidade: 3, estoque_atual: 25, custo_unitario_centavos: 450, codigo: "INC", data_cotacao: "2026-10-20", sku_fornecedor_id: 8 },
     { produto_id: 6, produto: "Suporte fictício", quantidade: 1, estoque_atual: 0, custo_unitario_centavos: null, codigo: null, data_cotacao: null, sku_fornecedor_id: null },
@@ -31,7 +36,10 @@ function simular() {
     const corpo = c.metodo !== "GET" ? { id: 3, ok: true }
       : c.caminho === "/api/kits" ? BASE
       : c.caminho.startsWith("/api/pesquisa/cotacoes") ? COTACOES[c.caminho.split("=").pop()!]
-      : c.caminho === "/api/kits/2" ? { ...BASE.kits[1], componentes: [], custo_unitario: null, custo_lote: null }
+      : c.caminho === "/api/apoio" ? { itens: [{ id: 4, nome: "Caixa fictícia M", custo_centavos: 180 }], fornecedores: [] }
+      : c.caminho === "/api/kits/2" ? { ...BASE.kits[1], componentes: [], custo_unitario: null, custo_lote: null, preco_venda_centavos: null,
+          apoio: { itens: [], embalagem_centavos: null },
+          margem: { embalagem: "2.50", embalagem_propria: false, contribuicao: null, margem_pct: null, preco_minimo: null, aviso_preco_minimo: null } }
       : { ...KIT, id: Number(c.caminho.split("/").pop()) };
     return new Response(JSON.stringify(corpo), { status: 200 });
   });
@@ -105,6 +113,7 @@ describe("Kits", () => {
         return new Response(JSON.stringify({ ...BASE, produtos }), { status: 200 });
       }
       if (caminho.startsWith("/api/pesquisa/cotacoes")) return new Response(JSON.stringify(COTACOES["5"]), { status: 200 });
+      if (caminho === "/api/apoio") return new Response(JSON.stringify({ itens: [], fornecedores: [] }), { status: 200 });
       return new Response(JSON.stringify(KIT), { status: 200 });
     });
     mostrar();
