@@ -133,7 +133,10 @@ function FichaProduto({ id, fornecedores, executar, ocupado, gravacoes, aoMudar,
             ))}
           </ul>
           <Abas rotulo="Partes da ficha" abas={[
-            { titulo: `Cotações (${ficha.skus.length})`, conteudo: <TabelaSkus skus={ficha.skus} limiteDias={ficha.limite_cotacao_dias} /> },
+            { titulo: `Cotações (${ficha.skus.length})`, conteudo: (
+              <TabelaSkus skus={ficha.skus} limiteDias={ficha.limite_cotacao_dias} excluir={{ ocupado: bloqueado,
+                aoExcluir: (sku) => gravar(() => pedir(`/cotacoes/${sku.id}`, { metodo: "DELETE" }), `SKU ${sku.codigo} excluído.`) }} />
+            ) },
             { titulo: "Registrar cotação", conteudo: (
               <FormularioCotacao key={versao} fornecedores={fornecedores} ocupado={bloqueado}
                 aoEnviar={(dados) => gravar(() => pedir(`/produtos/${id}/cotacoes`, { corpo: dados }), "Cotação registrada.")} />

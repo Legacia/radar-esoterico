@@ -52,6 +52,29 @@ def listar_skus(fornecedor_id=None, produto_id=None, caminho=None):
         return _skus_atuais(c, fornecedor_id, produto_id)
 
 
+def excluir_sku(sku_id, caminho=None):
+    """Exclui um SKU de fornecedor: todas as cotações do mesmo código (sem diferenciar maiúsculas).
+
+    Só sem histórico ligado (decisão do Legacia em 28/10/2026): se alguma cotação desse código está
+    num kit, no plano de compra ou num cenário de margem, nada é apagado e a mensagem diz onde.
+    Devolve quantas cotações foram apagadas.
+    """
+    with conectar(caminho) as c:
+        sku = c.execute("SELECT fornecedor_id, codigo FROM sku_fornecedor WHERE id=?", (sku_id,)).fetchone()
+        if sku is None:
+            raise ValueError("Cotação não encontrada.")
+        ids = [r[0] for r in c.execute(
+            "SELECT id FROM sku_fornecedor WHERE fornecedor_id=? AND codigo=? COLLATE NOCASE", (sku["fornecedor_id"], sku["codigo"]))]
+        marcas = ",".join("?" * len(ids))
+        usos = [nome for tabela, nome in (("kit_item", "kits"), ("plano_compra", "plano de compra"), ("cenario_margem", "cenários de margem"))
+                if c.execute(f"SELECT 1 FROM {tabela} WHERE sku_fornecedor_id IN ({marcas}) LIMIT 1", ids).fetchone()]
+        if usos:
+            raise ValueError(f"Não é possível excluir o SKU {sku['codigo']}: ele está em uso em {', '.join(usos)}. "
+                             "Troque a cotação usada lá antes de excluir.")
+        c.execute(f"DELETE FROM sku_fornecedor WHERE id IN ({marcas})", ids)
+        return len(ids)
+
+
 def registrar_cotacao(fornecedor_id, produto_id, codigo, custo, quantidade_minima,
                       data_cotacao, preco_venda=None, caminho=None):
     codigo = obrigatorio(codigo, "o código do SKU")

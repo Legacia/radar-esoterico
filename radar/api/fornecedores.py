@@ -8,7 +8,7 @@ from decimal import Decimal
 from pydantic import BaseModel, StrictBool
 
 from radar.api import protegido, texto
-from radar.fornecedores import (ETAPAS, alterar_etapa, avaliar_promocao, listar_fornecedores,
+from radar.fornecedores import (ETAPAS, alterar_etapa, avaliar_promocao, excluir_fornecedor, listar_fornecedores,
     listar_interacoes, obter_fornecedor, promover, registrar_interacao, salvar_fornecedor)
 from radar.margem import preco_minimo
 from radar.margem.configuracao import obter_configuracao
@@ -110,6 +110,12 @@ def ficha(fornecedor_id: int):
 @protegido.put("/fornecedores/{fornecedor_id}")
 def alterar(fornecedor_id: int, dados: Fornecedor):
     return {"id": _salvar(dados, fornecedor_id)}
+
+
+@protegido.delete("/fornecedores/{fornecedor_id}")
+def excluir(fornecedor_id: int):
+    excluir_fornecedor(fornecedor_id)
+    return {"ok": True}
 
 
 @protegido.post("/fornecedores/{fornecedor_id}/etapa")
