@@ -73,17 +73,21 @@ test("fluxo principal: margem, fornecedor, produto, cotação, compra e saída",
   }
   await novoProduto.getByRole("button", { name: "Salvar produto" }).click();
 
-  // Cotação do caso obrigatório; a margem aparece na ficha do produto.
+  // Cotação do caso obrigatório, em pacote com 2 unidades de venda a R$ 40,00 (custo de R$ 20,00 por
+  // unidade de venda); a margem aparece na ficha do produto.
   const fichaProduto = page.getByRole("dialog", { name: "Kit fictício 3 incensos + suporte" });
   await fichaProduto.getByRole("tab", { name: "Registrar cotação" }).click();
-  await fichaProduto.getByLabel("Código no fornecedor", { exact: true }).fill("KIT-E2E");
-  await fichaProduto.getByLabel("Custo unitário (R$)", { exact: true }).fill("20,00");
-  await fichaProduto.getByLabel("Quantidade mínima", { exact: true }).fill("5");
-  await fichaProduto.getByLabel("Preço conservador de venda (R$), opcional", { exact: true }).fill("59,90");
+  await fichaProduto.getByLabel("Código do parceiro (opcional)", { exact: true }).fill("KIT-E2E");
+  await fichaProduto.getByLabel("Preço cotado (R$)", { exact: true }).fill("40,00");
+  await fichaProduto.getByLabel("Unidades de venda na unidade cotada", { exact: true }).fill("2");
+  await fichaProduto.getByLabel("Quantidade mínima (em unidades cotadas)", { exact: true }).fill("3");
+  await fichaProduto.getByLabel("Preço conservador por unidade de venda (R$), opcional", { exact: true }).fill("59,90");
   await fichaProduto.getByRole("button", { name: "Salvar cotação" }).click();
   await expect(page.getByText("Cotação registrada.")).toBeVisible();
   await fichaProduto.getByRole("tab", { name: "Cotações (1)" }).click();
   const linha = fichaProduto.getByRole("row", { name: /KIT-E2E/ });
+  await expect(linha).toContainText("RAD-000001");
+  await expect(linha).toContainText("R$ 20,00");
   await expect(linha).toContainText("R$ 14,33");
   await expect(linha).toContainText("23,9%");
   await expect(linha).toContainText("R$ 55,56");
@@ -93,7 +97,7 @@ test("fluxo principal: margem, fornecedor, produto, cotação, compra e saída",
   await tela(page, "Decisão de compra");
   await page.getByRole("button", { name: "Adicionar produto ao plano" }).click();
   const plano = page.getByRole("dialog", { name: "Adicionar produto ao plano" });
-  await expect(plano.getByLabel("Quantidade planejada", { exact: true })).toHaveValue("5");
+  await expect(plano.getByLabel("Quantidade planejada", { exact: true })).toHaveValue("6");
   await expect(plano.getByLabel("Preço conservador de venda no plano (R$)", { exact: true })).toHaveValue("59,90");
   await plano.getByLabel("Demanda confirmada", { exact: true }).check();
   await plano.getByLabel("Justificativa de demanda", { exact: true }).fill("Evidência fictícia de procura");
@@ -102,7 +106,7 @@ test("fluxo principal: margem, fornecedor, produto, cotação, compra e saída",
   await plano.getByRole("button", { name: "Salvar planejamento" }).click();
   const cartao = page.getByRole("article", { name: "Kit fictício 3 incensos + suporte" });
   await expect(cartao).toContainText("Pronto");
-  await expect(cartao).toContainText("R$ 100,00 · 10,0% do orçamento");
+  await expect(cartao).toContainText("R$ 120,00 · 12,0% do orçamento");
   await expect(cartao).toContainText("R$ 14,33");
   await expect(cartao).toContainText("23,9%");
   await expect(cartao.getByRole("listitem")).toHaveText([
@@ -113,7 +117,7 @@ test("fluxo principal: margem, fornecedor, produto, cotação, compra e saída",
   // O Painel reflete o plano.
   await tela(page, "Painel");
   await expect(page.getByText("Prontos para comprar").locator("..")).toContainText("1");
-  await expect(page.getByText("Orçamento comprometido").locator("..")).toContainText("R$ 100,00");
+  await expect(page.getByText("Orçamento comprometido").locator("..")).toContainText("R$ 120,00");
 
   // Sair encerra a sessão no servidor.
   await page.getByRole("button", { name: "Sair" }).click();

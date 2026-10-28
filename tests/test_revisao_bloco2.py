@@ -5,7 +5,7 @@ from decimal import Decimal as D
 import pytest
 
 from radar.fornecedores import avaliar_promocao, obter_fornecedor, promover, salvar_fornecedor
-from radar.produtos import listar_skus, registrar_cotacao, salvar_produto
+from radar.produtos import listar_skus, listar_variacoes, registrar_cotacao, salvar_produto, salvar_variacao
 
 MARGEM = "Margem no alvo em pelo menos três produtos distintos"
 
@@ -25,9 +25,12 @@ def cotar(fornecedor, produto, codigo, db, preco=D("59.90"), data=None):
 
 
 def test_um_produto_com_tres_codigos_nao_promove(fornecedor, db):
+    # Três variações (SKUs) do mesmo produto, cada uma com o seu código do parceiro, contam como um produto.
     (produto,) = produtos(db, 1)
-    for codigo in ["INC-1", "INC-2", "INC-1 caixa"]:
-        cotar(fornecedor, produto, codigo, db)
+    variacoes = [v["id"] for v in listar_variacoes(produto, db)]
+    variacoes += [salvar_variacao(produto, tamanho=t, caminho=db) for t in ("M", "G")]
+    for codigo, variacao in zip(["INC-1", "INC-2", "INC-1 caixa"], variacoes):
+        registrar_cotacao(fornecedor, produto, codigo, D(20), 1, date.today(), D("59.90"), db, variacao_id=variacao)
     assert len(listar_skus(fornecedor_id=fornecedor, caminho=db)) == 3
     assert not avaliar_promocao(fornecedor, db)[MARGEM]
     assert promover(fornecedor, db) == [MARGEM]
@@ -73,14 +76,14 @@ def test_codigo_sem_diferenciar_maiusculas_e_recotacao(fornecedor, db):
     cotar(fornecedor, produto, "inc-1", db, preco=D("70.00"))
     skus = listar_skus(fornecedor_id=fornecedor, caminho=db)
     assert len(skus) == 1
-    assert skus[0]["codigo"] == "INC-1"  # mantém a grafia registrada primeiro
+    assert skus[0]["codigo_parceiro"] == "INC-1"  # mantém a grafia registrada primeiro
     assert skus[0]["preco_venda_centavos"] == 7000
 
 
 def test_codigo_em_minusculas_nao_pode_mudar_de_produto(fornecedor, db):
     a, b = produtos(db, 2)
     cotar(fornecedor, a, "INC-1", db)
-    with pytest.raises(ValueError, match="outro produto"):
+    with pytest.raises(ValueError, match="outra variação"):
         cotar(fornecedor, b, "inc-1", db)
 
 

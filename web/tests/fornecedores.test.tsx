@@ -25,7 +25,8 @@ const FICHA: Ficha = {
   margem_minima_pct: "0.20",
   limite_cotacao_dias: 15,
   skus: [{
-    id: 5, codigo: "KIT-01", produto_id: 3, produto: "Kit fictício", fornecedor_id: 1, fornecedor: "Fornecedor fictício Alfa",
+    id: 5, codigo: "RAD-000001", codigo_parceiro: "KIT-01", variacao_id: 1, cor: "", tamanho: "", unidade_venda: "unidade", preco_cotado_centavos: 2000, unidades_por_cotacao: 1,
+    produto_id: 3, produto: "Kit fictício", fornecedor_id: 1, fornecedor: "Fornecedor fictício Alfa",
     custo_centavos: 2000, quantidade_minima: 10, data_cotacao: "2026-09-01", cotacao_antiga: true,
     preco_venda_centavos: 5990, contribuicao: "14.33", margem_pct: "0.2392320534223706176961602671",
     preco_minimo: "55.56", aviso_preco_minimo: null,

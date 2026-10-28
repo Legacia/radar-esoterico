@@ -90,7 +90,8 @@ def test_filtros_e_cotacao_antiga(cliente, base):
     busca = cliente.get("/api/pesquisa", params={**params, "termo": "INCENSOS"}).json()
     assert [l["titulo"] for l in busca["linhas"]] == ["Kit fictício 3 incensos"]
     cotacoes = cliente.get("/api/pesquisa/cotacoes", params={"produto_id": base["produto"]}).json()
-    assert [c["codigo"] for c in cotacoes] == ["KIT-01", "KIT-02"]
+    assert [c["codigo_parceiro"] for c in cotacoes] == ["KIT-01", "KIT-02"]
+    assert {c["codigo"] for c in cotacoes} == {"RAD-000001"}  # as duas cotações são da mesma variação
 
 
 def test_vincular_e_desvincular(cliente, base):

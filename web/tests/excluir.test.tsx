@@ -13,7 +13,8 @@ const FICHA: Ficha = {
   cnpj_verificado: 0, condicoes_verificadas: 0, emite_nota: 0, amostra_avaliada: 0, reposicao_confirmada: 0,
   checklist: [], margem_minima_pct: "0.20", limite_cotacao_dias: 15,
   skus: [{
-    id: 5, codigo: "KIT-01", produto_id: 3, produto: "Kit fictício", fornecedor_id: 1, fornecedor: "Fornecedor fictício Alfa",
+    id: 5, codigo: "RAD-000001", codigo_parceiro: "KIT-01", variacao_id: 1, cor: "", tamanho: "", unidade_venda: "unidade", preco_cotado_centavos: 2000, unidades_por_cotacao: 1,
+    produto_id: 3, produto: "Kit fictício", fornecedor_id: 1, fornecedor: "Fornecedor fictício Alfa",
     custo_centavos: 2000, quantidade_minima: 10, data_cotacao: "2026-10-20", cotacao_antiga: false,
     preco_venda_centavos: null, contribuicao: null, margem_pct: null, preco_minimo: "55.56", aviso_preco_minimo: null,
   }],
@@ -67,12 +68,12 @@ describe("Excluir", () => {
   });
 
   it("SKU: exclui pela tabela de SKUs e recarrega a ficha", async () => {
-    const chamadas = simular({ "DELETE /api/cotacoes/5?fornecedor_id=1&codigo=KIT-01": { status: 200, corpo: { apagadas: 2 } } });
+    const chamadas = simular({ "DELETE /api/cotacoes/5?fornecedor_id=1&codigo=RAD-000001": { status: 200, corpo: { apagadas: 2 } } });
     const ficha = await abrirFicha();
     await userEvent.click(within(ficha).getByRole("tab", { name: "SKUs cotados (1)" }));
     await userEvent.click(within(ficha).getByRole("button", { name: "Excluir SKU" }));
     await userEvent.click(within(ficha).getByRole("button", { name: "Sim, excluir" }));
-    expect(await screen.findByText("SKU KIT-01 excluído.")).toBeInTheDocument();
+    expect(await screen.findByText("SKU RAD-000001 excluído.")).toBeInTheDocument();
     const depois = chamadas.slice(chamadas.findIndex((c) => c.metodo === "DELETE"));
     expect(depois.map((c) => `${c.metodo} ${c.caminho}`)).toEqual(expect.arrayContaining(["GET /api/fornecedores/1", "GET /api/fornecedores"]));
   });

@@ -72,13 +72,13 @@ def test_recotacao_mantem_um_codigo_e_preco_opcional(cliente, fornecedor):
     assert cotar(cliente, p, fornecedor, codigo="kit-01", custo="22", preco_venda="  ").status_code == 200
     skus = cliente.get(f"/api/produtos/{p}").json()["skus"]
     assert len(skus) == 1
-    assert skus[0]["codigo"] == "KIT-01" and skus[0]["custo_centavos"] == 2200
+    assert skus[0]["codigo"].startswith("RAD-") and skus[0]["codigo_parceiro"] == "KIT-01"
+    assert skus[0]["custo_centavos"] == 2200
     assert skus[0]["preco_venda_centavos"] is None and skus[0]["margem_pct"] is None
     assert skus[0]["cotacao_antiga"] is False
 
 
 @pytest.mark.parametrize("campos, mensagem", [
-    ({"codigo": " "}, "Informe o código"),
     ({"custo": "abc"}, "Informe um número"),
     ({"custo": "1,999"}, "no máximo duas casas"),
     ({"quantidade_minima": 0}, "quantidade mínima"),
@@ -99,7 +99,7 @@ def test_mesmo_codigo_em_outro_produto_e_recusado(cliente, fornecedor):
     p, q = novo(cliente), novo(cliente, nome="Outro produto fictício")
     cotar(cliente, p, fornecedor)
     resposta = cotar(cliente, q, fornecedor, codigo="kit-01")
-    assert resposta.status_code == 400 and "outro produto" in resposta.json()["detail"]
+    assert resposta.status_code == 400 and "outra variação" in resposta.json()["detail"]
 
 
 def test_produto_invalido_e_inexistente(cliente, fornecedor):

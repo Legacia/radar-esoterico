@@ -25,5 +25,5 @@ def test_atualiza_banco_v1_preservando_usuario_cotacoes_e_tarefas(tmp_path):
     assert listar_skus(caminho=db)[0]["preco_venda_centavos"] is None
     assert obter_configuracao(db).parametros.tarifa_fixa == D("4.50")
     with conectar(db) as c:
-        assert c.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert c.execute("PRAGMA user_version").fetchone()[0] == len(MIGRACOES)
         assert c.execute("SELECT count(*) FROM tarefa").fetchone()[0] == 1

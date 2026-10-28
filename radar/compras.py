@@ -51,12 +51,12 @@ def criterios_compra(item, parametros, total_comprometido, orcamento, reserva):
 def _itens(c):
     return [dict(r) for r in c.execute("""SELECT pc.*,p.nome AS produto,p.validado,p.justificativa_validacao,
         p.especificacoes_conferidas,p.procedencia_conferida,p.qualidade_conferida,
-        s.codigo,s.custo_unitario_centavos,s.quantidade_minima,s.data_cotacao,s.fornecedor_id,
+        v.codigo,s.codigo AS codigo_parceiro,v.unidade_venda,s.custo_unitario_centavos,s.quantidade_minima,s.data_cotacao,s.fornecedor_id,
         f.nome AS fornecedor,f.status AS status_fornecedor,f.cnpj,f.cnpj_verificado,
         f.condicoes_verificadas,f.emite_nota,f.prazo,f.condicao_pagamento,
         """ + SQL_EMBALAGEM_PRODUTO.format("pc.produto_id") + """ AS embalagem_centavos
         FROM plano_compra pc JOIN produto p ON p.id=pc.produto_id
-        JOIN sku_fornecedor s ON s.id=pc.sku_fornecedor_id
+        JOIN sku_fornecedor s ON s.id=pc.sku_fornecedor_id JOIN variacao v ON v.id=s.variacao_id
         JOIN fornecedor f ON f.id=s.fornecedor_id ORDER BY p.nome,p.id""")]
 
 

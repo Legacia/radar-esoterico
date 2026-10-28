@@ -6,7 +6,15 @@ import { Tabela, type Coluna } from "./Tabela";
 
 export type LinhaSku = {
   id: number;
+  /** Código interno da variação (RAD-000001), o SKU de vocês. */
   codigo: string;
+  codigo_parceiro: string;
+  variacao_id: number;
+  cor: string;
+  tamanho: string;
+  unidade_venda: string;
+  preco_cotado_centavos: number;
+  unidades_por_cotacao: number;
   produto_id: number;
   produto: string;
   fornecedor_id: number;
@@ -22,7 +30,11 @@ export type LinhaSku = {
   aviso_preco_minimo: string | null;
 };
 
-/** Exclusão de um SKU: fornecedor e código vão junto para a API conferir que é o SKU confirmado na tela. */
+/** "Preto · G · caixa": cor e tamanho quando existem, e a unidade de venda. */
+export const descreverVariacao = (v: { cor: string; tamanho: string; unidade_venda: string }) =>
+  [v.cor, v.tamanho, v.unidade_venda].filter((t) => t.trim()).join(" · ");
+
+/** Exclusão de um SKU: fornecedor e código interno vão junto para a API conferir que é o SKU confirmado na tela. */
 export const caminhoExcluirSku = (sku: LinhaSku) =>
   `/cotacoes/${sku.id}?${new URLSearchParams({ fornecedor_id: String(sku.fornecedor_id), codigo: sku.codigo })}`;
 
@@ -35,9 +47,13 @@ const ordemDecimal = (texto: string | null) => {
 };
 
 const COLUNAS: Coluna<LinhaSku>[] = [
-  { chave: "codigo", titulo: "Código", mostrar: (s) => s.codigo, ordenar: (s) => s.codigo },
-  { chave: "produto", titulo: "Produto", mostrar: (s) => s.produto, ordenar: (s) => s.produto },
-  { chave: "custo", titulo: "Custo", alinhar: "direita", mostrar: (s) => reaisDeCentavos(s.custo_centavos), ordenar: (s) => s.custo_centavos },
+  { chave: "codigo", titulo: "SKU", mostrar: (s) => s.codigo, ordenar: (s) => s.codigo },
+  { chave: "produto", titulo: "Produto", ordenar: (s) => s.produto,
+    mostrar: (s) => <>{s.produto}<div className="legenda-inline">{descreverVariacao(s)}</div></> },
+  { chave: "parceiro", titulo: "Cód. parceiro", mostrar: (s) => s.codigo_parceiro || "—", ordenar: (s) => s.codigo_parceiro },
+  { chave: "custo", titulo: "Custo por unidade de venda", alinhar: "direita", ordenar: (s) => s.custo_centavos,
+    mostrar: (s) => <>{reaisDeCentavos(s.custo_centavos)}{s.unidades_por_cotacao > 1 && (
+      <div className="legenda-inline">{reaisDeCentavos(s.preco_cotado_centavos)} ÷ {s.unidades_por_cotacao}</div>)}</> },
   { chave: "minima", titulo: "Qtd. mínima", alinhar: "direita", mostrar: (s) => s.quantidade_minima, ordenar: (s) => s.quantidade_minima },
   { chave: "data", titulo: "Cotação", ordenar: (s) => s.data_cotacao,
     mostrar: (s) => <>{dataBr(s.data_cotacao)}{s.cotacao_antiga && <> <Selo tom="amarelo">Antiga</Selo></>}</> },
@@ -64,7 +80,7 @@ export function TabelaSkus({ skus, limiteDias, semFornecedor, excluir }: {
     ...COLUNAS.slice(2),
   ];
   if (excluir) colunas.push({ chave: "excluir", titulo: "Excluir", mostrar: (s: LinhaSku) => (
-    <BotaoExcluir rotulo="Excluir SKU" pergunta={`Excluir o SKU ${s.codigo} e todas as cotações dele?`}
+    <BotaoExcluir rotulo="Excluir SKU" pergunta={`Excluir as cotações do SKU ${s.codigo} neste fornecedor?`}
       ocupado={excluir.ocupado} aoConfirmar={() => excluir.aoExcluir(s)} />
   ) });
   const aviso = skus.find((s) => s.aviso_preco_minimo)?.aviso_preco_minimo;
@@ -75,7 +91,8 @@ export function TabelaSkus({ skus, limiteDias, semFornecedor, excluir }: {
         <Aviso tipo="atencao">Há cotações com mais de {limiteDias} dias. Confirme os valores com o fornecedor.</Aviso>
       )}
       {aviso && <Aviso tipo="atencao">{aviso}</Aviso>}
-      <p className="legenda">Exibida a cotação mais recente de cada código por fornecedor. As anteriores são preservadas.
+      <p className="legenda">Exibida a cotação mais recente de cada SKU por fornecedor; as anteriores são preservadas.
+        Custo, quantidade mínima e preço conservador estão na unidade de venda do SKU.
         {excluir && " Só é possível excluir um SKU que não esteja em kit, plano de compra ou cenário de margem."}</p>
     </div>
   );
