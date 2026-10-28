@@ -9,7 +9,7 @@ import { Gaveta } from "../componentes/Gaveta";
 import { mensagemDeErro, useGravacao, type Executar } from "../componentes/gravacao";
 import { useNotificar } from "../componentes/Notificacoes";
 import { Tabela, type Coluna } from "../componentes/Tabela";
-import { TabelaSkus, type LinhaSku } from "../componentes/TabelaSkus";
+import { TabelaSkus, caminhoExcluirSku, type LinhaSku } from "../componentes/TabelaSkus";
 import { hojeIso } from "../formato";
 import { enderecoDe, useRota } from "../rotas";
 
@@ -135,7 +135,7 @@ function FichaProduto({ id, fornecedores, executar, ocupado, gravacoes, aoMudar,
           <Abas rotulo="Partes da ficha" abas={[
             { titulo: `Cotações (${ficha.skus.length})`, conteudo: (
               <TabelaSkus skus={ficha.skus} limiteDias={ficha.limite_cotacao_dias} excluir={{ ocupado: bloqueado,
-                aoExcluir: (sku) => gravar(() => pedir(`/cotacoes/${sku.id}`, { metodo: "DELETE" }), `SKU ${sku.codigo} excluído.`) }} />
+                aoExcluir: (sku) => gravar(() => pedir(caminhoExcluirSku(sku), { metodo: "DELETE" }), `SKU ${sku.codigo} excluído.`) }} />
             ) },
             { titulo: "Registrar cotação", conteudo: (
               <FormularioCotacao key={versao} fornecedores={fornecedores} ocupado={bloqueado}

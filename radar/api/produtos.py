@@ -85,5 +85,6 @@ def cotar(produto_id: int, dados: Cotacao):
 
 
 @protegido.delete("/cotacoes/{sku_id}")
-def excluir_cotacao(sku_id: int):
-    return {"apagadas": excluir_sku(sku_id)}
+def excluir_cotacao(sku_id: int, fornecedor_id: int, codigo: str):
+    # Fornecedor e código confirmados vão junto, para uma tela antiga não apagar outro SKU com o mesmo id.
+    return {"apagadas": excluir_sku(sku_id, fornecedor_id, codigo)}

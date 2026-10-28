@@ -10,7 +10,7 @@ import { Gaveta } from "../componentes/Gaveta";
 import { mensagemDeErro, useGravacao, type Executar } from "../componentes/gravacao";
 import { useNotificar } from "../componentes/Notificacoes";
 import { Tabela, type Coluna } from "../componentes/Tabela";
-import { TabelaSkus, type LinhaSku } from "../componentes/TabelaSkus";
+import { TabelaSkus, caminhoExcluirSku, type LinhaSku } from "../componentes/TabelaSkus";
 import { dataBr, hojeIso, percentual, reaisDeCentavos, textoDeCentavos } from "../formato";
 import { enderecoDe, useRota } from "../rotas";
 
@@ -152,7 +152,7 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
             { titulo: `SKUs cotados (${ficha.skus.length})`, conteudo: (
               <>
                 <TabelaSkus skus={ficha.skus} limiteDias={ficha.limite_cotacao_dias} semFornecedor excluir={{ ocupado: bloqueado,
-                  aoExcluir: (sku) => gravar(() => pedir(`/cotacoes/${sku.id}`, { metodo: "DELETE" }), `SKU ${sku.codigo} excluído.`) }} />
+                  aoExcluir: (sku) => gravar(() => pedir(caminhoExcluirSku(sku), { metodo: "DELETE" }), `SKU ${sku.codigo} excluído.`) }} />
                 <a href={enderecoDe("produtos")}>Lançar ou renovar cotações em Produtos e SKUs</a>
               </>
             ) },
@@ -163,7 +163,7 @@ function FichaFornecedor({ id, etapas, executar, ocupado, gravacoes, aoMudar, ao
           ]} />
           <BotaoExcluir rotulo="Excluir fornecedor" pergunta={`Excluir ${ficha.nome}?`} ocupado={bloqueado}
             aoConfirmar={() => executar(async () => {
-              await pedir(`/fornecedores/${id}`, { metodo: "DELETE" });
+              await pedir(`/fornecedores/${id}?${new URLSearchParams({ nome: ficha.nome })}`, { metodo: "DELETE" });
               notificar(`${ficha.nome} excluído.`);
               aoFechar();
               await aoMudar();

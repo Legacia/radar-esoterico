@@ -22,6 +22,10 @@ export type LinhaSku = {
   aviso_preco_minimo: string | null;
 };
 
+/** Exclusão de um SKU: fornecedor e código vão junto para a API conferir que é o SKU confirmado na tela. */
+export const caminhoExcluirSku = (sku: LinhaSku) =>
+  `/cotacoes/${sku.id}?${new URLSearchParams({ fornecedor_id: String(sku.fornecedor_id), codigo: sku.codigo })}`;
+
 // Ordenar por texto decimal exige comparar como número exato: inteiro de centésimos de milésimo.
 const ordemDecimal = (texto: string | null) => {
   if (texto === null) return null;

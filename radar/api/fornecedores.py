@@ -113,8 +113,9 @@ def alterar(fornecedor_id: int, dados: Fornecedor):
 
 
 @protegido.delete("/fornecedores/{fornecedor_id}")
-def excluir(fornecedor_id: int):
-    excluir_fornecedor(fornecedor_id)
+def excluir(fornecedor_id: int, nome: str):
+    # O nome confirmado vai junto, para uma ficha antiga não apagar outro fornecedor com o mesmo id.
+    excluir_fornecedor(fornecedor_id, nome)
     return {"ok": True}
 
 

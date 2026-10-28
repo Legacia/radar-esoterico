@@ -43,7 +43,7 @@ async function abrirFicha() {
 
 describe("Excluir", () => {
   it("fornecedor: pede confirmação, cancela sem apagar e, confirmado, apaga e fecha a ficha", async () => {
-    const chamadas = simular({ "DELETE /api/fornecedores/1": { status: 200, corpo: { ok: true } } });
+    const chamadas = simular({ "DELETE /api/fornecedores/1?nome=Fornecedor+fict%C3%ADcio+Alfa": { status: 200, corpo: { ok: true } } });
     const ficha = await abrirFicha();
     await userEvent.click(within(ficha).getByRole("button", { name: "Excluir fornecedor" }));
     await userEvent.click(within(ficha).getByRole("button", { name: "Cancelar" }));
@@ -53,12 +53,12 @@ describe("Excluir", () => {
     await userEvent.click(within(ficha).getByRole("button", { name: "Sim, excluir" }));
     expect(await screen.findByText("Fornecedor fictício Alfa excluído.")).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(chamadas.filter((c) => c.metodo === "DELETE")).toEqual([{ caminho: "/api/fornecedores/1", metodo: "DELETE" }]);
+    expect(chamadas.filter((c) => c.metodo === "DELETE")).toEqual([{ caminho: "/api/fornecedores/1?nome=Fornecedor+fict%C3%ADcio+Alfa", metodo: "DELETE" }]);
   });
 
   it("fornecedor com histórico: mostra a explicação da API e mantém a ficha", async () => {
     const motivo = "Não é possível excluir: o fornecedor tem 1 cotação(ões) registrados.";
-    simular({ "DELETE /api/fornecedores/1": { status: 400, corpo: { detail: motivo } } });
+    simular({ "DELETE /api/fornecedores/1?nome=Fornecedor+fict%C3%ADcio+Alfa": { status: 400, corpo: { detail: motivo } } });
     const ficha = await abrirFicha();
     await userEvent.click(within(ficha).getByRole("button", { name: "Excluir fornecedor" }));
     await userEvent.click(within(ficha).getByRole("button", { name: "Sim, excluir" }));
@@ -67,7 +67,7 @@ describe("Excluir", () => {
   });
 
   it("SKU: exclui pela tabela de SKUs e recarrega a ficha", async () => {
-    const chamadas = simular({ "DELETE /api/cotacoes/5": { status: 200, corpo: { apagadas: 2 } } });
+    const chamadas = simular({ "DELETE /api/cotacoes/5?fornecedor_id=1&codigo=KIT-01": { status: 200, corpo: { apagadas: 2 } } });
     const ficha = await abrirFicha();
     await userEvent.click(within(ficha).getByRole("tab", { name: "SKUs cotados (1)" }));
     await userEvent.click(within(ficha).getByRole("button", { name: "Excluir SKU" }));
