@@ -9,6 +9,7 @@ import { mensagemDeErro, useGravacao } from "../componentes/gravacao";
 import { useNotificar } from "../componentes/Notificacoes";
 import { dataBr, percentual, reais, reaisDeCentavos, textoDeCentavos } from "../formato";
 import { enderecoDe } from "../rotas";
+import { Dica } from "../componentes/Dica";
 
 type Item = {
   produto_id: number; produto: string; pronto: boolean; validado: number; justificativa_validacao: string;
@@ -167,8 +168,8 @@ function FormularioOrcamento({ campos, ocupado, aoEnviar }: {
   return (
     <form className="formulario" onSubmit={enviar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      <label>Orçamento do lote (R$)<input required inputMode="decimal" value={total} onChange={(e) => setTotal(e.target.value)} /></label>
-      <label>Reserva de reposição (R$)<input required inputMode="decimal" value={reserva} onChange={(e) => setReserva(e.target.value)} /></label>
+      <label><span className="rotulo">Orçamento do lote (R$)<Dica de="Orçamento do lote (R$)" /></span><input required inputMode="decimal" value={total} onChange={(e) => setTotal(e.target.value)} /></label>
+      <label><span className="rotulo">Reserva de reposição (R$)<Dica de="Reserva de reposição (R$)" /></span><input required inputMode="decimal" value={reserva} onChange={(e) => setReserva(e.target.value)} /></label>
       <div><button type="submit" className="botao botao-principal" disabled={ocupado}>{ocupado ? "Salvando…" : "Salvar orçamento"}</button></div>
     </form>
   );
@@ -193,7 +194,7 @@ function FormularioPlano({ produtos, itens, produtoFixo, ocupado, aoEnviar }: {
   return (
     <div className="pilha">
       {produtoFixo === undefined && (
-        <label className="formulario">Produto do plano
+        <label className="formulario"><span className="rotulo">Produto do plano<Dica de="Produto do plano" /></span>
           <select value={produtoId} onChange={(e) => setProdutoId(Number(e.target.value))}>
             {produtos.map((p) => <option key={p.id} value={p.id}>{p.nome}{itens.some((i) => i.produto_id === p.id) ? " · já no plano" : ""}</option>)}
           </select>
@@ -278,7 +279,7 @@ function CamposPlano({ produto, item, ocupado, aoEnviar }: {
   return (
     <form className="formulario" onSubmit={enviar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      <label>Cotação para o plano
+      <label><span className="rotulo">Cotação para o plano<Dica de="Cotação para o plano" /></span>
         <select value={cotacaoId ?? ""} onChange={(e) => trocarCotacao(Number(e.target.value))}>
           {cotacoes.map((c) => (
             <option key={c.id} value={c.id}>{c.fornecedor} · {c.codigo} · {dataBr(c.data_cotacao)} · {reaisDeCentavos(c.custo_centavos)}</option>
@@ -286,24 +287,24 @@ function CamposPlano({ produto, item, ocupado, aoEnviar }: {
         </select>
       </label>
       <div className="campos-2">
-        <label>Quantidade planejada<input required inputMode="numeric" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></label>
-        <label>Preço conservador de venda no plano (R$)<input required inputMode="decimal" value={preco} onChange={(e) => setPreco(e.target.value)} /></label>
+        <label><span className="rotulo">Quantidade planejada<Dica de="Quantidade planejada" /></span><input required inputMode="numeric" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></label>
+        <label><span className="rotulo">Preço conservador de venda no plano (R$)<Dica de="Preço conservador de venda no plano (R$)" /></span><input required inputMode="decimal" value={preco} onChange={(e) => setPreco(e.target.value)} /></label>
       </div>
       <fieldset className="grupo">
-        <legend>Confirmações manuais</legend>
+        <legend>Confirmações manuais<Dica de="Confirmações manuais" /></legend>
         <p className="legenda">Cada confirmação exige uma justificativa com a evidência que vocês encontraram.</p>
         <div className="campos-3">
           <div className="pilha">
-            <label className="tarefa"><input type="checkbox" checked={demanda} onChange={(e) => setDemanda(e.target.checked)} />Demanda confirmada</label>
-            <label>Justificativa de demanda<textarea rows={3} value={textoDemanda} onChange={(e) => setTextoDemanda(e.target.value)} /></label>
+            <label className="tarefa"><input type="checkbox" checked={demanda} onChange={(e) => setDemanda(e.target.checked)} />Demanda confirmada<Dica de="Demanda confirmada" /></label>
+            <label><span className="rotulo">Justificativa de demanda<Dica de="Justificativa de demanda" /></span><textarea rows={3} value={textoDemanda} onChange={(e) => setTextoDemanda(e.target.value)} /></label>
           </div>
           <div className="pilha">
-            <label className="tarefa"><input type="checkbox" checked={concorrencia} onChange={(e) => setConcorrencia(e.target.checked)} />Concorrência confirmada</label>
-            <label>Justificativa de concorrência<textarea rows={3} value={textoConcorrencia} onChange={(e) => setTextoConcorrencia(e.target.value)} /></label>
+            <label className="tarefa"><input type="checkbox" checked={concorrencia} onChange={(e) => setConcorrencia(e.target.checked)} />Concorrência confirmada<Dica de="Concorrência confirmada" /></label>
+            <label><span className="rotulo">Justificativa de concorrência<Dica de="Justificativa de concorrência" /></span><textarea rows={3} value={textoConcorrencia} onChange={(e) => setTextoConcorrencia(e.target.value)} /></label>
           </div>
           <div className="pilha">
-            <label className="tarefa"><input type="checkbox" checked={validado} onChange={(e) => setValidado(e.target.checked)} />Produto validado</label>
-            <label>Justificativa da validação<textarea rows={3} value={textoValidacao} onChange={(e) => setTextoValidacao(e.target.value)} /></label>
+            <label className="tarefa"><input type="checkbox" checked={validado} onChange={(e) => setValidado(e.target.checked)} />Produto validado<Dica de="Produto validado" /></label>
+            <label><span className="rotulo">Justificativa da validação<Dica de="Justificativa da validação" /></span><textarea rows={3} value={textoValidacao} onChange={(e) => setTextoValidacao(e.target.value)} /></label>
           </div>
         </div>
       </fieldset>

@@ -10,6 +10,7 @@ import { useNotificar } from "../componentes/Notificacoes";
 import { Tabela } from "../componentes/Tabela";
 import { dataBr, hojeIso, reaisDeCentavos, textoDeCentavos } from "../formato";
 import { enderecoDe } from "../rotas";
+import { Dica } from "../componentes/Dica";
 
 export type ItemApoio = {
   id: number; nome: string; fornecedor_id: number | null; fornecedor: string | null;
@@ -112,15 +113,15 @@ function FormularioItem({ item, fornecedores, ocupado, aoEnviar }: {
     <form className="formulario" onSubmit={enviar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       <div className="campos-2">
-        <label>Nome do item<input required value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Caixa P, sacola kraft…" /></label>
-        <label>Fornecedor (opcional)
+        <label><span className="rotulo">Nome do item<Dica de="Nome do item" /></span><input required value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Caixa P, sacola kraft…" /></label>
+        <label><span className="rotulo">Fornecedor (opcional)<Dica de="Fornecedor (opcional)" /></span>
           <select value={fornecedor} onChange={(e) => setFornecedor(e.target.value)}>
             <option value="">Sem fornecedor</option>
             {fornecedores.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
           </select>
         </label>
-        <label>Custo unitário (R$)<input required inputMode="decimal" value={custo} onChange={(e) => setCusto(e.target.value)} /></label>
-        <label>Data da cotação<input type="date" required max={hojeIso()} value={data} onChange={(e) => setData(e.target.value)} /></label>
+        <label><span className="rotulo">Custo unitário (R$)<Dica de="Custo unitário (R$)" /></span><input required inputMode="decimal" value={custo} onChange={(e) => setCusto(e.target.value)} /></label>
+        <label><span className="rotulo">Data da cotação<Dica de="Data da cotação" /></span><input type="date" required max={hojeIso()} value={data} onChange={(e) => setData(e.target.value)} /></label>
       </div>
       <p className="legenda">Ao mudar o custo, todos os produtos e kits que usam o item passam a usar o valor novo.</p>
       <div><button type="submit" className="botao botao-principal" disabled={ocupado}>{ocupado ? "Salvando…" : "Salvar item"}</button></div>

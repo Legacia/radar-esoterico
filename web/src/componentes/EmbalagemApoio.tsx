@@ -7,6 +7,7 @@ import { enderecoDe } from "../rotas";
 import { Aviso, Selo } from "./basicos";
 import { mensagemDeErro } from "./gravacao";
 import { Tabela } from "./Tabela";
+import { Dica } from "./Dica";
 
 export type ItemIndicado = {
   id: number; nome: string; fornecedor: string | null; custo_centavos: number; data_cotacao: string;
@@ -84,12 +85,12 @@ export function EmbalagemApoio({ apoio, padrao, caminho, quem, ocupado, gravar }
       ) : (
         <form className="formulario" onSubmit={indicar}>
           <div className="campos-2">
-            <label>Item de apoio
+            <label><span className="rotulo">Item de apoio<Dica de="Item de apoio" /></span>
               <select value={itemId ?? ""} onChange={(e) => setItemId(Number(e.target.value))}>
                 {opcoes.map((o) => <option key={o.id} value={o.id}>{o.nome} · {reaisDeCentavos(o.custo_centavos)}</option>)}
               </select>
             </label>
-            <label>Quantidade por unidade vendida
+            <label><span className="rotulo">Quantidade por unidade vendida<Dica de="Quantidade por unidade vendida" /></span>
               <input required inputMode="numeric" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
             </label>
           </div>

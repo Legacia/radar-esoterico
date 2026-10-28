@@ -7,6 +7,7 @@ import { Gaveta } from "../componentes/Gaveta";
 import { useNotificar } from "../componentes/Notificacoes";
 import { dataBr, percentual, reaisDeCentavos } from "../formato";
 import { enderecoDe } from "../rotas";
+import { Dica } from "../componentes/Dica";
 
 export type Tarefa = { id: number; titulo: string; semana: number; responsavel: string; concluida: number };
 type Pendencia = { tipo: string; referencia: string; data: string | null; responsavel: string };
@@ -268,16 +269,16 @@ export function FormularioTarefa({ tarefa, ocupado, aoEnviar }: {
   return (
     <form className="formulario" onSubmit={enviar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      <label>Título da tarefa<input value={titulo} onChange={(e) => setTitulo(e.target.value)} required /></label>
-      <label>Semana
+      <label><span className="rotulo">Título da tarefa<Dica de="Título da tarefa" /></span><input value={titulo} onChange={(e) => setTitulo(e.target.value)} required /></label>
+      <label><span className="rotulo">Semana<Dica de="Semana" /></span>
         <select value={semana} onChange={(e) => setSemana(Number(e.target.value))}>
           {[1, 2, 3, 4].map((s) => <option key={s} value={s}>Semana {s}</option>)}
         </select>
       </label>
-      <label>Responsável<input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} required /></label>
+      <label><span className="rotulo">Responsável<Dica de="Responsável" /></span><input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} required /></label>
       <label className="tarefa">
         <input type="checkbox" checked={concluida} onChange={(e) => setConcluida(e.target.checked)} />
-        Tarefa concluída
+        Tarefa concluída<Dica de="Tarefa concluída" />
       </label>
       <button type="submit" className="botao botao-principal" disabled={ocupado}>
         {ocupado ? "Salvando…" : "Salvar tarefa"}

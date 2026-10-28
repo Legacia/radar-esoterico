@@ -301,6 +301,7 @@ No Windows deste projeto, `py` e `python` funcionam (Python 3.13).
 - O padrão está implementado em `web/src/tema.css` e nos componentes comuns de `web/src/componentes/` (painel, selo, tabela ordenável, gaveta, abas, aviso, notificação, trava de gravação e carregamento seguro de ficha).
 - Sem biblioteca de componentes visuais pronta (estilo próprio, como na referência). Acessibilidade: foco visível pelo teclado, Esc fecha gavetas, gráficos com `aria-label` e tabela alternativa.
 - Navegação agrupada em seções: Visão geral, Fornecimento, Mercado e Decisão.
+- Explicação de campos (pedido do Legacia em 28/10/2026): todo campo de formulário tem um "i" ao lado do nome; ao passar o mouse, um balão mostra uma explicação curta. Os textos ficam todos em `web/src/dicas.ts`, chaveados pelo nome do campo; campo novo ganha texto lá e `<Dica de="..." />` ao lado do rótulo.
 - Pesquisa de oportunidades é **simulação livre** (decisão do Legacia em 27/10/2026): usa a margem-alvo configurada, mesmo abaixo de 20%. Promoção de fornecedor, decisão de compra e pendências do Painel continuam exigindo o piso de 20%.
 
 ## Migração para React (decisão de 27/10/2026, concluída em 28/10/2026)
