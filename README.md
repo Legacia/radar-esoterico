@@ -1,3 +1,15 @@
+> **English summary.** Radar Esotérico is a local commercial-intelligence tool for
+> a small esoteric-goods shop: suppliers, quotes, margins, purchase planning, kits
+> and a dashboard. It is a personal project that I specified and directed, built
+> with AI coding agents under a pull-request workflow. Two agents alternate between
+> building and reviewing: Codex built the first MVP blocks and Claude Code reviewed
+> them; since late October 2026, Claude Code builds and Codex reviews. Every code
+> change ships with automated tests (pytest, Vitest, Playwright) and GitHub CI.
+> Stack: Python, FastAPI, SQLite with versioned migrations, React and TypeScript.
+> Money is stored as integer cents. Status: functional prototype running on a home
+> network, with no production data yet. The rest of this README and the project's
+> working rules are in Portuguese.
+
 # Radar Esotérico — MVP 0.1
 
 Ferramenta local de inteligência comercial da Tenda da Bruxa 2.0: login, fornecedores, produtos,
